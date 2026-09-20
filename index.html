@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音畫布 · 會唱歌的畫</title>
+<style>
+  :root{
+    --paper:#f4f0e4;
+    --paper-deep:#eae4d2;
+    --ink:#2e2c27;
+    --ink-mid:#5c584f;
+    --ink-dim:#98937f;
+    --seal:#b0402f;
+    --line:rgba(46,44,39,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--paper) 0%,var(--paper-deep) 100%);
+    min-height:100vh;position:relative;
+    letter-spacing:.05em;
+  }
+  #grain{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background-repeat:repeat;mix-blend-mode:multiply;opacity:.5;
+  }
+  main{position:relative;z-index:2;}
+  ::selection{background:rgba(176,64,47,.18);}
+
+  /* ── 頂欄：極簡一行 ── */
+  nav{
+    position:sticky;top:0;z-index:10;
+    display:flex;align-items:baseline;gap:34px;
+    padding:26px 7vw 20px;
+    background:linear-gradient(180deg, rgba(244,240,228,.92), rgba(244,240,228,0));
+  }
+  nav .brand{
+    font-size:19px;font-weight:600;letter-spacing:.42em;
+  }
+  nav .brand i{
+    font-style:normal;color:var(--seal);margin-right:2px;
+  }
+  nav .links{display:flex;gap:30px;margin-left:auto;align-items:baseline;}
+  nav a{
+    color:var(--ink-mid);text-decoration:none;font-size:14px;
+    letter-spacing:.28em;transition:color .25s;
+    border-bottom:1px solid transparent;padding-bottom:3px;
+  }
+  nav a:hover{color:var(--ink);border-bottom-color:var(--ink-dim);}
+  nav a.cta{
+    color:var(--paper);background:var(--ink);
+    padding:10px 26px 11px 30px;border-bottom:none;
+    letter-spacing:.32em;
+  }
+  nav a.cta:hover{background:#454138;color:var(--paper);}
+
+  /* ── Hero：畫為主體，字為題跋 ── */
+  .hero{
+    max-width:1180px;margin:0 auto;
+    padding:4vh 7vw 0;
+    display:grid;
+    grid-template-columns:minmax(150px,.9fr) 2.4fr;
+    gap:min(5vw,64px);
+    align-items:stretch;
+  }
+  /* 直排題字 */
+  .hero .inscription{
+    display:flex;justify-content:flex-end;gap:26px;
+    padding-top:2vh;
+  }
+  .hero h1{
+    writing-mode:vertical-rl;
+    font-size:clamp(34px,4.6vw,58px);
+    font-weight:600;letter-spacing:.34em;
+    line-height:1.55;
+    height:min(58vh,520px);
+  }
+  .hero .subcol{
+    writing-mode:vertical-rl;
+    font-size:clamp(13px,1.15vw,15px);
+    color:var(--ink-mid);letter-spacing:.4em;line-height:2.6;
+    height:min(50vh,440px);
+    padding-top:14px;
+  }
+  /* 主視覺 */
+  .hero .art{
+    position:relative;
+    align-self:center;
+  }
+  .hero .art img{
+    display:block;width:100%;height:auto;
+    box-shadow:0 30px 80px -30px rgba(46,44,39,.45);
+  }
+  /* 朱砂印 */
+  .hero .art::after{
+    content:"音 畫";
+    position:absolute;right:22px;bottom:22px;
+    writing-mode:vertical-rl;
+    font-size:13px;letter-spacing:.32em;font-weight:600;
+    color:#f2ead8;background:var(--seal);
+    padding:9px 5px;border-radius:3px;
+    opacity:.92;
+    box-shadow:0 1px 5px rgba(0,0,0,.2);
+  }
+
+  /* 入口 */
+  .enterwrap{
+    max-width:1180px;margin:0 auto;
+    padding:6vh 7vw 4vh;text-align:center;
+  }
+  .enter{
+    display:inline-block;
+    font-family:inherit;
+    font-size:17px;letter-spacing:.5em;text-indent:.5em;
+    color:var(--ink);text-decoration:none;
+    border:1px solid var(--ink-mid);
+    padding:20px 64px;
+    transition:background .3s,color .3s,letter-spacing .4s;
+  }
+  .enter:hover{background:var(--ink);color:var(--paper);letter-spacing:.62em;}
+  .enter .arr{font-family:sans-serif;}
+
+  /* ── 分隔：墨線 ── */
+  .divider{
+    max-width:640px;margin:5vh auto;display:block;opacity:.55;
+  }
+
+  /* ── 章節 ── */
+  section{max-width:1080px;margin:0 auto;padding:7vh 7vw;}
+  .sechead{
+    display:flex;align-items:center;gap:28px;margin-bottom:7vh;
+  }
+  .sechead h2{
+    font-size:24px;font-weight:600;letter-spacing:.5em;white-space:nowrap;
+  }
+  .sechead .rule{flex:1;height:1px;background:var(--line);}
+  .sechead .no{
+    font-size:13px;color:var(--ink-dim);letter-spacing:.2em;white-space:nowrap;
+  }
+
+  /* 特色：二欄清單，墨字編號 */
+  .feats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:0 min(6vw,80px);
+  }
+  .feat{
+    display:flex;gap:24px;align-items:flex-start;
+    padding:30px 0;border-bottom:1px solid var(--line);
+  }
+  .feat .fnum{
+    flex:0 0 auto;
+    font-size:15px;color:var(--ink-dim);
+    letter-spacing:.1em;padding-top:5px;
+    font-variant-numeric:tabular-nums;
+  }
+  .feat h3{
+    font-size:18px;font-weight:600;letter-spacing:.22em;margin-bottom:10px;
+  }
+  .feat h3 em{
+    font-style:normal;color:var(--seal);
+  }
+  .feat p{
+    color:var(--ink-mid);font-size:14.5px;line-height:2.1;letter-spacing:.06em;
+  }
+
+  /* 怎麼玩：橫卷三段 */
+  .steps{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:min(4vw,52px);
+  }
+  .step{position:relative;padding-top:26px;}
+  .step::before{
+    content:"";position:absolute;top:0;left:0;
+    width:42px;height:3px;background:var(--ink);
+  }
+  .step .zh{
+    font-size:32px;font-weight:600;letter-spacing:.14em;
+    margin-bottom:16px;
+  }
+  .step .zh span{color:var(--seal);font-size:15px;letter-spacing:.2em;margin-right:12px;}
+  .step p{color:var(--ink-mid);font-size:14.5px;line-height:2.1;}
+
+  /* 關於我 */
+  #about .aboutgrid{
+    display:grid;grid-template-columns:auto 1fr;gap:min(7vw,90px);
+    align-items:center;max-width:760px;margin:0 auto;
+  }
+  #about .name-v{
+    writing-mode:vertical-rl;
+    font-size:44px;font-weight:600;letter-spacing:.3em;
+    border-right:1px solid var(--line);
+    padding-right:34px;
+    height:220px;
+  }
+  #about .bio{
+    color:var(--ink-mid);font-size:15px;line-height:2.4;letter-spacing:.08em;
+  }
+  .social{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;}
+  .social a{
+    display:inline-flex;align-items:center;gap:10px;
+    color:var(--ink);text-decoration:none;font-size:14px;letter-spacing:.14em;
+    border:1px solid var(--ink-mid);
+    padding:12px 24px;
+    transition:background .3s,color .3s;
+  }
+  .social a:hover{background:var(--ink);color:var(--paper);}
+  .social svg{width:17px;height:17px;fill:currentColor;}
+
+  footer{
+    text-align:center;padding:6vh 7vw 7vh;
+    color:var(--ink-dim);font-size:12.5px;letter-spacing:.3em;
+  }
+  footer .sealdot{color:var(--seal);}
+
+  /* ── 響應式 ── */
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;gap:36px;}
+    .hero .inscription{
+      justify-content:center;order:2;padding-top:0;
+    }
+    .hero h1{height:auto;min-height:300px;}
+    .hero .subcol{height:auto;min-height:260px;}
+    .hero .art{order:1;}
+    nav .links{gap:16px;}
+    nav a{letter-spacing:.12em;}
+    #about .aboutgrid{grid-template-columns:1fr;gap:40px;}
+    #about .name-v{
+      writing-mode:horizontal-tb;height:auto;border-right:none;
+      border-bottom:1px solid var(--line);padding:0 0 22px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="grain"></div>
+<main>
+
+<nav>
+  <span class="brand"><i>音</i>畫布</span>
+  <div class="links">
+    <a href="#features">特色</a>
+    <a href="#how">怎麼玩</a>
+    <a href="#about">關於我</a>
+    <a class="cta" href="play.html">入畫</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="inscription">
+    <div class="subcol">觸控白板上的視覺化樂器・筆有濃淡・畫有留白・眾人共繪一卷・其聲自和</div>
+    <h1>畫一條線聽見一段旋律</h1>
+  </div>
+  <div class="art">
+    <img src="assets/hero.jpg" alt="水墨山水間，一道如旋律般起伏的墨線橫貫天際，墨點如飛鳥如音符">
+  </div>
+</div>
+
+<div class="enterwrap">
+  <a class="enter" href="play.html">展 卷 作 畫</a>
+</div>
+
+<svg class="divider" viewBox="0 0 640 40" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 24 C 120 8, 210 34, 320 20 S 520 6, 620 22"
+    fill="none" stroke="#2e2c27" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>
+  <circle cx="320" cy="20" r="3.2" fill="#b0402f" opacity=".85"/>
+</svg>
+
+<section id="features">
+  <div class="sechead">
+    <h2>特色</h2>
+    <div class="rule"></div>
+    <span class="no">不需樂理基礎・畫出來的都好聽</span>
+  </div>
+  <div class="feats">
+    <div class="feat">
+      <span class="fnum">壹</span>
+      <div>
+        <h3>筆勢即<em>奏法</em></h3>
+        <p>輕點是短音，拖曳是旋律線；快筆濃、慢筆淡，抖動成顫音，畫圈成琶音。一支筆，五種聲音的表情。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">貳</span>
+      <div>
+        <h3>色彩即<em>音色</em></h3>
+        <p>濃墨鐘琴、赭石木琴、胭脂撥弦、花青笛聲、紫灰星光。分組認領顏色共繪，一張畫便是一首合奏。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">參</span>
+      <div>
+        <h3>水墨的<em>美學</em></h3>
+        <p>宣紙紋理、墨色暈染、飛白筆觸。全班數十筆疊上，畫面始終是一幅畫，聲音始終和諧。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">肆</span>
+      <div>
+        <h3>鼓聲為<em>底</em></h3>
+        <p>心跳、散步、進行曲、雨滴、慶典。五組節奏伴奏，讓集體創作自然對齊拍子。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">伍</span>
+      <div>
+        <h3>為教學<em>而生</em></h3>
+        <p>十二調、六種音階；音名、唱名、簡譜三種顯示。音階鎖定，畫布上不存在錯的音。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">陸</span>
+      <div>
+        <h3>作品<em>帶得走</em></h3>
+        <p>為作品題名，一鍵錄影。畫面與演奏一同輸出成影片，成果發表、與家長分享都方便。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="sechead">
+    <h2>怎麼玩</h2>
+    <div class="rule"></div>
+    <span class="no">三步驟・共創一幅會唱歌的畫</span>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="zh"><span>其一</span>選色</div>
+      <p>調色盤上每種顏色是一種樂器。分組認領顏色，便是認領一個聲部。</p>
+    </div>
+    <div class="step">
+      <div class="zh"><span>其二</span>作畫</div>
+      <p>高處是高音，低處是低音。畫山是旋律起伏，畫雨是輕快短音，畫圈是流動琶音。</p>
+    </div>
+    <div class="step">
+      <div class="zh"><span>其三</span>聆聽</div>
+      <p>掃描光自左而右掃過畫卷，每一筆都被讀成音樂。題名、錄影，作品就完成了。</p>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="sechead">
+    <h2>關於我</h2>
+    <div class="rule"></div>
+  </div>
+  <div class="aboutgrid">
+    <div class="name-v">Dato.</div>
+    <div>
+      <p class="bio">音樂・教育・創作——<br>讓每個孩子都能畫出自己的聲音。</p>
+      <div class="social">
+        <a href="https://www.threads.com/@lycbert" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.781 3.63 2.695 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32l-1.757-1.18c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/></svg>
+          Threads
+        </a>
+        <a href="https://www.youtube.com/@datoemusic" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          YouTube
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>音畫布 <span class="sealdot">・</span> a sound canvas by Dato.</footer>
+
+</main>
+
+<script>
+"use strict";
+/* 與畫布同款的宣紙紋理 */
+function makePaperTexture(){
+  const S=512;
+  const cv=document.createElement("canvas");cv.width=S;cv.height=S;
+  const c=cv.getContext("2d");
+  c.fillStyle="#fff";c.fillRect(0,0,S,S);
+  for(let i=0;i<90;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=20+Math.random()*70;
+    const g=c.createRadialGradient(x,y,0,x,y,r);
+    const a=.012+Math.random()*.02;
+    g.addColorStop(0,`rgba(120,105,80,${a})`);
+    g.addColorStop(1,"rgba(120,105,80,0)");
+    c.fillStyle=g;
+    c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
+  }
+  const img=c.getImageData(0,0,S,S),d=img.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=(Math.random()-.5)*14;
+    d[i]+=n;d[i+1]+=n;d[i+2]+=n*.9;
+  }
+  c.putImageData(img,0,0);
+  c.strokeStyle="rgba(130,115,90,.05)";
+  for(let i=0;i<160;i++){
+    const x=Math.random()*S,y=Math.random()*S;
+    const len=8+Math.random()*36,ang=Math.random()*Math.PI;
+    const bend=(Math.random()-.5)*10;
+    c.lineWidth=.5+Math.random()*.7;
+    c.beginPath();c.moveTo(x,y);
+    c.quadraticCurveTo(
+      x+Math.cos(ang)*len/2+bend,y+Math.sin(ang)*len/2+bend,
+      x+Math.cos(ang)*len,y+Math.sin(ang)*len);
+    c.stroke();
+  }
+  c.fillStyle="rgba(100,88,66,.07)";
+  for(let i=0;i<50;i++){
+    const x=Math.random()*S,y=Math.random()*S;
+    c.beginPath();c.arc(x,y,.6+Math.random()*1.1,0,Math.PI*2);c.fill();
+  }
+  return cv.toDataURL("image/png");
+}
+document.getElementById("grain").style.backgroundImage=`url(${makePaperTexture()})`;
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3debe3e6b2c4aa3',t:'MTc4OTg4NTQyNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
