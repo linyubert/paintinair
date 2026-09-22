@@ -88,6 +88,109 @@
   #titleInput::placeholder{color:var(--text-dim);opacity:.65;font-weight:500;}
   #titleInput:focus{border-bottom-color:var(--text-dim);}
 
+  /* 骰子：擲出氛圍 */
+  #diceBtn.rolling{animation:diceroll .5s ease;}
+  @keyframes dicenudge{
+    0%,100%{transform:translate(-50%,-50%) scale(1);}
+    30%{transform:translate(calc(-50% - 8px),-50%) scale(1);}
+    60%{transform:translate(calc(-50% + 8px),-50%) scale(1);}
+  }
+  @keyframes diceroll{
+    0%{transform:rotate(0);}
+    40%{transform:rotate(200deg) scale(1.15);}
+    100%{transform:rotate(360deg);}
+  }
+
+  /* ── 3D 骰子懸浮視窗 ── */
+  #diceModal{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+    z-index:46;
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+    padding:32px 52px 28px;
+    background:color-mix(in srgb, var(--panel) 60%, transparent);
+    border:1px solid var(--panel-border);
+    border-radius:28px;
+    backdrop-filter:blur(24px) saturate(1.2);
+    -webkit-backdrop-filter:blur(24px) saturate(1.2);
+    box-shadow:0 24px 80px -20px rgba(0,0,0,.45);
+    opacity:0;pointer-events:none;
+    transition:opacity .3s, transform .3s;
+  }
+  #diceModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  #diceModal .dm-title{
+    font-family:"Noto Serif TC","Songti TC",serif;
+    font-size:19px;letter-spacing:.42em;text-indent:.42em;
+    color:var(--text);font-weight:600;
+  }
+  #diceModal .dm-hint{
+    font-size:13px;letter-spacing:.2em;color:var(--text-dim);
+  }
+  .scene{
+    width:104px;height:104px;
+    perspective:520px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cube{
+    width:100%;height:100%;position:relative;
+    transform-style:preserve-3d;
+    transform:rotateX(-18deg) rotateY(32deg);
+    transition:transform 1.25s cubic-bezier(.22,1.2,.36,1);
+  }
+  .face{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Noto Serif TC","Songti TC",serif;
+    font-size:28px;font-weight:600;letter-spacing:.08em;
+    color:#3a362e;
+    background:linear-gradient(150deg,#faf6ea,#eee7d4);
+    border:2px solid rgba(70,64,52,.28);
+    border-radius:16px;
+    box-shadow:inset 0 0 26px rgba(120,105,80,.18);
+    backface-visibility:hidden;
+  }
+  .face b{color:var(--seal,#b0402f);}
+  .face.f1{transform:rotateY(  0deg) translateZ(52px);}
+  .face.f2{transform:rotateY( 90deg) translateZ(52px);}
+  .face.f3{transform:rotateY(180deg) translateZ(52px);}
+  .face.f4{transform:rotateY(270deg) translateZ(52px);}
+  .face.f5{transform:rotateX( 90deg) translateZ(52px);}
+  .face.f6{transform:rotateX(-90deg) translateZ(52px);}
+  #diceResult{
+    min-height:58px;text-align:center;
+    opacity:0;transform:translateY(6px);
+    transition:opacity .4s,transform .4s;
+  }
+  #diceResult.show{opacity:1;transform:translateY(0);}
+  #diceResult .rname{
+    font-family:"Noto Serif TC","Songti TC",serif;
+    font-size:30px;font-weight:600;letter-spacing:.4em;text-indent:.4em;
+    color:var(--text);
+  }
+  #diceResult .rdesc{
+    margin-top:6px;font-size:13px;letter-spacing:.2em;color:var(--text-dim);
+  }
+  #diceModal .dm-actions{display:flex;gap:12px;}
+  #diceModal .dm-actions button{min-height:48px;font-size:15px;letter-spacing:.15em;}
+  #diceGo{
+    background:var(--btn-bg);border:1px solid var(--panel-border)!important;
+  }
+  #moodToast{
+    position:fixed;left:50%;top:20%;transform:translateX(-50%) translateY(-8px);
+    z-index:45;pointer-events:none;
+    text-align:center;
+    opacity:0;transition:opacity .4s, transform .4s;
+  }
+  #moodToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #moodToast .mname{
+    font-family:"Noto Serif TC","Songti TC",serif;
+    font-size:44px;font-weight:600;letter-spacing:.4em;text-indent:.4em;
+    color:var(--text);
+  }
+  #moodToast .mdesc{
+    margin-top:10px;font-size:14px;letter-spacing:.22em;
+    color:var(--text-dim);
+  }
   #recBtn.rec{
     background:linear-gradient(140deg,#e0483a,#b53a2b)!important;
     color:#fff;border-color:transparent;
@@ -325,7 +428,7 @@
 <div id="startOverlay">
   <h1>♪ 音畫布</h1>
   <p>如作水墨——筆有濃淡，畫有留白，眾人共繪一卷，其聲自和。<br>
-  輕點是短音 · 拖曳是旋律 · 快筆重、慢筆輕 · 抖動成顫音 · 畫圈成琶音</p>
+  輕點是短音 · 拖曳是旋律 · 抖動成顫音 · 畫圈成琶音 · 豎畫成風 · 塗抹成水</p>
   <button id="startBtn">開始</button>
 </div>
 
@@ -340,14 +443,36 @@
 
 <div id="grain"></div>
 <div id="scrim"></div>
+<div id="moodToast"><div class="mname"></div><div class="mdesc"></div></div>
+
+<div id="diceModal">
+  <div class="dm-title">擲骰定調</div>
+  <div class="scene" id="diceScene">
+    <div class="cube" id="diceCube">
+      <div class="face f1">晨<b>霧</b></div>
+      <div class="face f2">夜<b>雨</b></div>
+      <div class="face f3">市<b>集</b></div>
+      <div class="face f4">古<b>道</b></div>
+      <div class="face f5">雪<b>原</b></div>
+      <div class="face f6">廟<b>會</b></div>
+    </div>
+  </div>
+  <div class="dm-hint" id="diceHint">點骰子，擲出今天的氛圍</div>
+  <div id="diceResult"><div class="rname"></div><div class="rdesc"></div></div>
+  <div class="dm-actions">
+    <button id="diceGo" style="display:none;">開始作畫</button>
+  </div>
+</div>
 
 <div id="legend">
-  <span><b>🖌</b>色彩＝音色</span>
+  <span><b>彩</b>色彩＝音色</span>
   <span><b>●</b>輕點＝短音</span>
   <span><b>─</b>拖曳＝旋律線</span>
-  <span><b>⚡</b>快筆濃．慢筆淡</span>
+  <span><b>疾</b>快筆濃．慢筆淡</span>
   <span><b>⌇</b>上下抖動＝顫音</span>
   <span><b>◯</b>畫圈＝琶音</span>
+  <span><b>↓</b>快速豎畫＝風聲</span>
+  <span><b>〜</b>左右塗抹＝水聲</span>
 </div>
 
 <div id="drumPanel">
@@ -417,6 +542,7 @@
   <button id="clearBtn" title="清除">✕</button>
   <button id="recBtn" title="錄影">⏺</button>
   <button id="drumBtn" title="鼓機伴奏">🥁</button>
+  <button id="diceBtn" title="擲骰換氛圍">骰</button>
   <button id="helpBtn" title="筆法說明">？</button>
   <button id="gearBtn" title="設定">⚙</button>
 </div>
@@ -447,17 +573,18 @@ const JIANPU={0:"1",1:"♯1",2:"2",3:"♭3",4:"3",5:"4",6:"♯4",7:"5",8:"♭6",
 /* ═════════ 調色盤：顏色＝音色
    一般主題用亮彩 hue；水墨主題用文人畫淡彩（墨、赭石、胭脂、花青、紫灰） ═════════ */
 const PALETTE=[
-  {id:"bell",   name:"鐘琴", hue:45,  ink:{h:225,s:10,l:24}}, // 濃墨
-  {id:"marimba",name:"木琴", hue:145, ink:{h:26, s:45,l:40}}, // 赭石
-  {id:"pluck",  name:"撥弦", hue:8,   ink:{h:352,s:52,l:44}}, // 胭脂
-  {id:"flute",  name:"笛聲", hue:205, ink:{h:212,s:40,l:40}}, // 花青
-  {id:"pad",    name:"星光", hue:275, ink:{h:272,s:22,l:42}}, // 紫灰
+  {id:"bell",   name:"鐘琴", sname:"古鐘", hue:45,  ink:{h:225,s:10,l:24}}, // 濃墨
+  {id:"marimba",name:"木琴", sname:"夜木", hue:145, ink:{h:26, s:45,l:40}}, // 赭石
+  {id:"pluck",  name:"撥弦", sname:"沉弦", hue:8,   ink:{h:352,s:52,l:44}}, // 胭脂
+  {id:"flute",  name:"笛聲", sname:"塤聲", hue:205, ink:{h:212,s:40,l:40}}, // 花青
+  {id:"pad",    name:"星光", sname:"夜霧", hue:275, ink:{h:272,s:22,l:42}}, // 紫灰
 ];
 
 /* ═════════ state ═════════ */
 const state={
   keyIndex:0, scaleIndex:0, octaves:2, cols:16, bpm:100,
   labelMode:"none", playing:false, pal:0, theme:"ink",
+  shadow:false,   // 影子音色組（骰子決定）
   rows:[],
 };
 let strokes=[];   // {type, pal, pts:[{x,y,t,s}]}
@@ -500,10 +627,10 @@ function initAudio(){
   const comp=AC.createDynamicsCompressor();
   comp.threshold.value=-18;comp.ratio.value=8;comp.knee.value=10;
   master.connect(comp);comp.connect(AC.destination);
-  delaySend=AC.createGain();delaySend.gain.value=.12;
-  const dly=AC.createDelay(1);dly.delayTime.value=.28;
-  const fb=AC.createGain();fb.gain.value=.22;
-  const damp=AC.createBiquadFilter();damp.type="lowpass";damp.frequency.value=2400;
+  delaySend=AC.createGain();delaySend.gain.value=.07;
+  const dly=AC.createDelay(1);dly.delayTime.value=.3;
+  const fb=AC.createGain();fb.gain.value=.16;
+  const damp=AC.createBiquadFilter();damp.type="lowpass";damp.frequency.value=1600;
   delaySend.connect(dly);dly.connect(damp);damp.connect(fb);fb.connect(dly);
   damp.connect(master);
 }
@@ -612,43 +739,58 @@ function fireDrums(col,when){
   }
 }
 
-function vBell(midi,t,vel=1,decay=1.4){
-  const f=midiToFreq(midi);
-  const g=AC.createGain();g.connect(master);g.connect(delaySend);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.5*vel,t+.008);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*3.98;
-  const g2=AC.createGain();g2.gain.setValueAtTime(.18*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+.22);
-  const o3=AC.createOscillator();o3.type="triangle";o3.frequency.value=f*2;
-  const g3=AC.createGain();g3.gain.setValueAtTime(.10*vel,t);
-  g3.gain.exponentialRampToValueAtTime(.0001,t+.6);
-  o1.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
-  o1.start(t);o2.start(t);o3.start(t);
-  const end=t+decay+.2;o1.stop(end);o2.stop(end);o3.stop(end);
+/* 立體聲定位：依畫面 x 位置分配左右聲道（pan -1~1，undefined=置中） */
+function mkOut(pan){
+  const g=AC.createGain();
+  if(pan!==undefined&&AC.createStereoPanner){
+    const p=AC.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));
+    g.connect(p);p.connect(master);
+  }else g.connect(master);
+  g.connect(delaySend);
+  return g;
 }
-function vMarimba(midi,t,vel=1,decay=.5){
+
+/* 鐘琴：金屬質感——非諧泛音（2.76×、5.40×）+ 雙振盪微差拍頻的閃爍 + 長餘響 */
+function vBell(midi,t,vel=1,decay=1.8,pan){
   const f=midiToFreq(midi);
-  const g=AC.createGain();g.connect(master);g.connect(delaySend);
+  const g=mkOut(pan);
   g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.55*vel,t+.004);
+  g.gain.linearRampToValueAtTime(.42*vel,t+.006);
   g.gain.exponentialRampToValueAtTime(.0001,t+decay);
   const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*3.9;
-  const g2=AC.createGain();g2.gain.setValueAtTime(.28*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+.07);
-  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*9.2;
-  const g3=AC.createGain();g3.gain.setValueAtTime(.09*vel,t);
-  g3.gain.exponentialRampToValueAtTime(.0001,t+.035);
+  const o1b=AC.createOscillator();o1b.type="sine";o1b.frequency.value=f*1.0045; // 拍頻閃爍
+  const g1b=AC.createGain();g1b.gain.value=.5;
+  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.76;    // 鐘的非諧泛音
+  const g2=AC.createGain();g2.gain.setValueAtTime(.16*vel,t);
+  g2.gain.exponentialRampToValueAtTime(.0001,t+decay*.5);
+  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*5.40;
+  const g3=AC.createGain();g3.gain.setValueAtTime(.07*vel,t);
+  g3.gain.exponentialRampToValueAtTime(.0001,t+decay*.25);
+  o1.connect(g);o1b.connect(g1b);g1b.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
+  o1.start(t);o1b.start(t);o2.start(t);o3.start(t);
+  const end=t+decay+.2;o1.stop(end);o1b.stop(end);o2.stop(end);o3.stop(end);
+}
+/* 木琴：木頭質感——強基音短衰減 + 木琴特有的 4× 調律泛音 + 敲擊瞬間的木頭「叩」聲 */
+function vMarimba(midi,t,vel=1,decay=.32,pan){
+  const f=midiToFreq(midi);
+  const g=mkOut(pan);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.6*vel,t+.003);
+  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
+  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
+  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*4.0;     // 木琴板的調律泛音
+  const g2=AC.createGain();g2.gain.setValueAtTime(.24*vel,t);
+  g2.gain.exponentialRampToValueAtTime(.0001,t+.09);
+  const o3=AC.createOscillator();o3.type="triangle";o3.frequency.value=f*7.1; // 敲擊瞬間的「叩」
+  const g3=AC.createGain();g3.gain.setValueAtTime(.12*vel,t);
+  g3.gain.exponentialRampToValueAtTime(.0001,t+.02);
   o1.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
   o1.start(t);o2.start(t);o3.start(t);
   const end=t+decay+.1;o1.stop(end);o2.stop(end);o3.stop(end);
 }
-function vPluck(midi,t,vel=1,decay=.55){
+function vPluck(midi,t,vel=1,decay=.55,pan){
   const f=midiToFreq(midi);
-  const g=AC.createGain();g.connect(master);g.connect(delaySend);
+  const g=mkOut(pan);
   g.gain.setValueAtTime(0,t);
   g.gain.linearRampToValueAtTime(.42*vel,t+.005);
   g.gain.exponentialRampToValueAtTime(.0001,t+decay);
@@ -659,9 +801,9 @@ function vPluck(midi,t,vel=1,decay=.55){
   o.connect(lp);lp.connect(g);
   o.start(t);o.stop(t+decay+.15);
 }
-function vFlute(midi,t,vel=1,dur=.35){
+function vFlute(midi,t,vel=1,dur=.35,pan){
   const f=midiToFreq(midi);
-  const g=AC.createGain();g.connect(master);g.connect(delaySend);
+  const g=mkOut(pan);
   const lvl=.34*vel;
   g.gain.setValueAtTime(0,t);
   g.gain.linearRampToValueAtTime(lvl,t+.09);
@@ -677,9 +819,9 @@ function vFlute(midi,t,vel=1,dur=.35){
   o1.start(t);o2.start(t);vib.start(t);
   const end=t+dur+.35;o1.stop(end);o2.stop(end);vib.stop(end);
 }
-function vPad(midi,t,vel=1,dur=.5){
+function vPad(midi,t,vel=1,dur=.5,pan){
   const f=midiToFreq(midi);
-  const g=AC.createGain();g.connect(master);g.connect(delaySend);
+  const g=mkOut(pan);
   const lvl=.3*vel;
   g.gain.setValueAtTime(0,t);
   g.gain.linearRampToValueAtTime(lvl,t+.12);
@@ -699,27 +841,183 @@ function vPad(midi,t,vel=1,dur=.5){
   o1.start(t);o2.start(t);o3.start(t);lfo.start(t);
   const end=t+dur+.8;o1.stop(end);o2.stop(end);o3.stop(end);lfo.stop(end);
 }
-function playVoice(voice,midi,time,vel=1,susSec=0){
+/* ═════════ 影子音色組（暗面的五種）═════════ */
+/* 古鐘：低沉銅鐘——基音下移一個八度、更慢的起音、更長更暗的餘響 */
+function vDarkBell(midi,t,vel=1,decay=2.6,pan){
+  const f=midiToFreq(midi-12);
+  const g=mkOut(pan);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.4*vel,t+.03);
+  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
+  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
+  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.4;  // 更低的非諧泛音
+  const g2=AC.createGain();g2.gain.setValueAtTime(.2*vel,t);
+  g2.gain.exponentialRampToValueAtTime(.0001,t+decay*.6);
+  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*1.007; // 沉緩拍頻
+  const g3=AC.createGain();g3.gain.value=.5;
+  o1.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
+  o1.start(t);o2.start(t);o3.start(t);
+  const end=t+decay+.2;o1.stop(end);o2.stop(end);o3.stop(end);
+}
+/* 夜木：悶木鼓——低八度、圓鈍如手掌拍空心木 */
+function vDarkMarimba(midi,t,vel=1,decay=.4,pan){
+  const f=midiToFreq(midi-12);
+  const g=mkOut(pan);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.6*vel,t+.006);
+  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
+  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
+  const o1b=AC.createOscillator();o1b.type="sine";o1b.frequency.value=f*.5; // 次八度共鳴
+  const g1b=AC.createGain();g1b.gain.setValueAtTime(.25*vel,t);
+  g1b.gain.exponentialRampToValueAtTime(.0001,t+decay*.8);
+  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.8;
+  const g2=AC.createGain();g2.gain.setValueAtTime(.1*vel,t);
+  g2.gain.exponentialRampToValueAtTime(.0001,t+.04);
+  o1.connect(g);o1b.connect(g1b);g1b.connect(g);o2.connect(g2);g2.connect(g);
+  o1.start(t);o1b.start(t);o2.start(t);
+  const end=t+decay+.1;o1.stop(end);o1b.stop(end);o2.stop(end);
+}
+/* 沉弦：低音撥弦——古琴般的深沉，慢滑的濾波衰落 */
+function vDarkPluck(midi,t,vel=1,decay=1.1,pan){
+  const f=midiToFreq(midi-12);
+  const g=mkOut(pan);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.44*vel,t+.008);
+  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
+  const o=AC.createOscillator();o.type="sawtooth";o.frequency.value=f;
+  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f;
+  const g2=AC.createGain();g2.gain.value=.5;
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.Q.value=1.2;
+  lp.frequency.setValueAtTime(Math.min(3200,f*5),t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(120,f*.9),t+decay*.7);
+  o.connect(lp);o2.connect(g2);g2.connect(g);lp.connect(g);
+  o.start(t);o2.start(t);
+  o.stop(t+decay+.15);o2.stop(t+decay+.15);
+}
+/* 塤聲：陶塤——氣息厚、微啞、almost 純音帶氣噪 */
+function vXun(midi,t,vel=1,dur=.4,pan){
+  const f=midiToFreq(midi);
+  const g=mkOut(pan);
+  const lvl=.32*vel;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(lvl,t+.14);
+  g.gain.setValueAtTime(lvl,t+dur);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.3);
+  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
+  const vib=AC.createOscillator();vib.frequency.value=4.2;
+  const vibG=AC.createGain();vibG.gain.value=f*.012;   // 更寬的顫音＝氣息感
+  vib.connect(vibG);vibG.connect(o1.frequency);
+  /* 氣噪 */
+  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
+  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f*2;bp.Q.value=8;
+  const gn=AC.createGain();gn.gain.value=.06*vel;
+  src.connect(bp);bp.connect(gn);gn.connect(g);
+  o1.connect(g);
+  o1.start(t);vib.start(t);src.start(t);
+  const end=t+dur+.4;o1.stop(end);vib.stop(end);src.stop(end);
+}
+/* 夜霧：暗墊音——低八度、更暗的濾波、緩慢的波動 */
+function vDarkPad(midi,t,vel=1,dur=.6,pan){
+  const f=midiToFreq(midi-12);
+  const g=mkOut(pan);
+  const lvl=.3*vel;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(lvl,t+.2);
+  g.gain.setValueAtTime(lvl,t+dur);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.9);
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=f*2.2;
+  lp.connect(g);
+  const o1=AC.createOscillator();o1.type="triangle";o1.frequency.value=f;
+  const o2=AC.createOscillator();o2.type="triangle";o2.frequency.value=f*1.005;
+  const g2=AC.createGain();g2.gain.value=.4;
+  const lfo=AC.createOscillator();lfo.frequency.value=2.1;
+  const lfoG=AC.createGain();lfoG.gain.value=lvl*.18;
+  lfo.connect(lfoG);lfoG.connect(g.gain);
+  o1.connect(lp);o2.connect(g2);g2.connect(lp);
+  o1.start(t);o2.start(t);lfo.start(t);
+  const end=t+dur+1;o1.stop(end);o2.stop(end);lfo.stop(end);
+}
+
+function playVoice(voice,midi,time,vel=1,susSec=0,pan){
   if(!AC)return;
   const t=time??AC.currentTime;
+  if(state.shadow){
+    switch(voice){
+      case "bell":    vDarkBell(midi,t,vel,susSec>0?Math.max(2.6,susSec+1):2.6,pan);return;
+      case "marimba": vDarkMarimba(midi,t,vel,susSec>0?.5+Math.min(1,susSec*.5):.4,pan);return;
+      case "pluck":   vDarkPluck(midi,t,vel,susSec>0?Math.max(1.1,susSec+.4):1.1,pan);return;
+      case "flute":   vXun(midi,t,vel,Math.max(.35,susSec||.4),pan);return;
+      case "pad":     vDarkPad(midi,t,vel,Math.max(.5,susSec||.6),pan);return;
+    }
+  }
   switch(voice){
-    case "bell":    vBell(midi,t,vel,susSec>0?Math.max(1.4,susSec+.8):1.4);break;
-    case "marimba": vMarimba(midi,t,vel,susSec>0?.6+Math.min(1.2,susSec*.6):.5);break;
-    case "pluck":   vPluck(midi,t,vel,susSec>0?Math.max(.55,susSec+.3):.55);break;
-    case "flute":   vFlute(midi,t,vel,Math.max(.3,susSec||.35));break;
-    case "pad":     vPad(midi,t,vel,Math.max(.4,susSec||.5));break;
+    case "bell":    vBell(midi,t,vel,susSec>0?Math.max(1.8,susSec+.9):1.8,pan);break;
+    case "marimba": vMarimba(midi,t,vel,susSec>0?.4+Math.min(.9,susSec*.5):.32,pan);break;
+    case "pluck":   vPluck(midi,t,vel,susSec>0?Math.max(.55,susSec+.3):.55,pan);break;
+    case "flute":   vFlute(midi,t,vel,Math.max(.3,susSec||.35),pan);break;
+    case "pad":     vPad(midi,t,vel,Math.max(.4,susSec||.5),pan);break;
   }
 }
-function playVoiceShort(voice,midi,time,vel=1){
+function playVoiceShort(voice,midi,time,vel=1,pan){
   if(!AC)return;
   const t=time??AC.currentTime;
-  switch(voice){
-    case "bell":    vBell(midi,t,vel,.5);break;
-    case "marimba": vMarimba(midi,t,vel,.35);break;
-    case "pluck":   vPluck(midi,t,vel);break;
-    case "flute":   vFlute(midi,t,vel,.16);break;
-    case "pad":     vPad(midi,t,vel,.2);break;
+  if(state.shadow){
+    switch(voice){
+      case "bell":    vDarkBell(midi,t,vel,.9,pan);return;
+      case "marimba": vDarkMarimba(midi,t,vel,.3,pan);return;
+      case "pluck":   vDarkPluck(midi,t,vel,.7,pan);return;
+      case "flute":   vXun(midi,t,vel,.18,pan);return;
+      case "pad":     vDarkPad(midi,t,vel,.25,pan);return;
+    }
   }
+  switch(voice){
+    case "bell":    vBell(midi,t,vel,.6,pan);break;
+    case "marimba": vMarimba(midi,t,vel,.26,pan);break;
+    case "pluck":   vPluck(midi,t,vel,.55,pan);break;
+    case "flute":   vFlute(midi,t,vel,.16,pan);break;
+    case "pad":     vPad(midi,t,vel,.2,pan);break;
+  }
+}
+
+/* ═════════ 情境音（非音高的自然聲響） ═════════ */
+let noiseBuf=null;
+function getNoise(){
+  if(noiseBuf)return noiseBuf;
+  noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
+  const d=noiseBuf.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  return noiseBuf;
+}
+/* 風：由上往下快速直線——噪音由高頻掃向低頻的呼嘯 */
+function sWind(t,vel=1,dur=.8,pan,down=true){
+  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
+  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.Q.value=3.2;
+  const f0=down?2600:500,f1=down?320:2600;
+  bp.frequency.setValueAtTime(f0,t);
+  bp.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  const g=mkOut(pan);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.3*vel,t+dur*.25);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  src.connect(bp);bp.connect(g);
+  src.start(t);src.stop(t+dur+.05);
+}
+/* 水：水平慢速長抹——低頻潺潺的白噪音，帶起伏 */
+function sWater(t,vel=1,dur=1.2,pan){
+  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=700;lp.Q.value=.8;
+  const g=mkOut(pan);
+  const lvl=.22*vel;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(lvl,t+.15);
+  g.gain.setValueAtTime(lvl,t+dur-.25);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  const lfo=AC.createOscillator();lfo.frequency.value=1.7;
+  const lfoG=AC.createGain();lfoG.gain.value=280;
+  lfo.connect(lfoG);lfoG.connect(lp.frequency);
+  src.connect(lp);lp.connect(g);
+  src.start(t);lfo.start(t);
+  src.stop(t+dur+.05);lfo.stop(t+dur+.05);
 }
 
 /* ═════════ sequencer（含集體創作聲音護欄） ═════════ */
@@ -761,26 +1059,34 @@ function fireColumn(col,when){
   sorted.forEach((ev,idx)=>{
     const t=when+idx*.012+(Math.random()-.5)*.012;
     const vel=Math.min(.9,Math.max(.35,ev.vel*crowd));
+    /* 立體聲：畫面 x 位置 → 左右定位（收斂到 ±0.7，不會極端偏一側） */
+    const pan=(ev.x-.5)*1.4;
     switch(ev.kind){
       case "note":
         /* 長音：一擊 + 依長度延長的自然餘響（乾淨直接，不輪奏） */
-        playVoice(ev.voice,state.rows[ev.r].midi,t,vel,ev.dur>1?dur*ev.dur:0);
+        playVoice(ev.voice,state.rows[ev.r].midi,t,vel,ev.dur>1?dur*ev.dur:0,pan);
         break;
       case "pluck":
-        playVoiceShort(ev.voice,state.rows[ev.r].midi,t,vel);
+        playVoiceShort(ev.voice,state.rows[ev.r].midi,t,vel,pan);
         break;
       case "trem":{
         const n=4;
         for(let i=0;i<n;i++)
-          playVoiceShort(ev.voice,state.rows[ev.r].midi,t+dur*i/n,vel*(i%2?.62:.9));
+          playVoiceShort(ev.voice,state.rows[ev.r].midi,t+dur*i/n,vel*(i%2?.62:.9),pan);
         break;
       }
       case "arp":{
         const rows=ev.rows,n=rows.length;
         for(let i=0;i<n;i++)
-          playVoiceShort(ev.voice,state.rows[rows[i]].midi,t+dur*i/Math.max(n,3)*.9,vel*.75);
+          playVoiceShort(ev.voice,state.rows[rows[i]].midi,t+dur*i/Math.max(n,3)*.9,vel*.75,pan);
         break;
       }
+      case "wind":
+        sWind(t,vel,.5+ev.span*1.2,pan,ev.down);
+        break;
+      case "water":
+        sWater(t,vel,dur*ev.dur,pan);
+        break;
     }
   });
 }
@@ -839,9 +1145,64 @@ function paintPlayhead(col){
   if(col<0)return;
   phline.style.left=(col*100/state.cols)+"%";
   for(const ev of (events[col]||[])){
-    spawnPulse(ev.x,ev.y,pulseBase(ev.pal),ev.kind==="arp"?1.8:1);
+    spawnPulse(ev.x,ev.y,pulseBase(ev.pal),
+      ev.kind==="arp"?1.8:(ev.kind==="wind"||ev.kind==="water")?2.4:1);
     if(ev.trail)for(const p of ev.trail)spawnPulse(p.x,p.y,pulseBase(ev.pal),.6);
+    /* 筆畫「活起來」：被奏響的整條筆畫甦醒——墨色加濃、微微變寬再回落 */
+    if(ev.st)wakeStroke(ev.st);
   }
+}
+
+/* ═════════ living strokes：被奏響的筆畫呼吸 ═════════ */
+const awake=new Map(); // stroke → t0
+let breathRunning=false;
+function wakeStroke(st){
+  awake.set(st,performance.now());
+  if(!breathRunning){breathRunning=true;requestAnimationFrame(breathLoop);}
+}
+function breathLoop(now){
+  let any=false;
+  for(const[st,t0]of awake){
+    if(now-t0>600)awake.delete(st);else any=true;
+  }
+  /* 呼吸中的筆畫以加濃加寬重繪一次（疊在原筆畫上，淡出） */
+  redrawStrokes();
+  for(const[st,t0]of awake){
+    const t=(now-t0)/600;
+    const breathe=Math.sin(Math.min(1,t)*Math.PI); // 0→1→0
+    sCtx.save();
+    sCtx.globalAlpha=breathe*(theme()==="night"?.55:.35);
+    drawStrokeScaled(sCtx,st,1+breathe*.35);
+    sCtx.restore();
+  }
+  if(any)requestAnimationFrame(breathLoop);
+  else{breathRunning=false;redrawStrokes();}
+}
+function drawStrokeScaled(ctx,st,widthMul){
+  if(st.type==="dot"){drawDot(ctx,st);return;}
+  const pts=st.pts;
+  if(pts.length<2)return;
+  ctx.save();setupInk(ctx);
+  for(let i=1;i<pts.length;i++){
+    const p0=pts[i-1],p1=pts[i];
+    const midY=(p0.y+p1.y)/2;
+    ctx.strokeStyle=inkColor(st.pal,midY);
+    if(theme()==="night"){
+      ctx.shadowColor=`hsl(${PALETTE[st.pal].hue} 90% 60% / .8)`;
+      ctx.shadowBlur=16;
+    }
+    ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.lineWidth=widthOf((p0.s+p1.s)/2)*widthMul;
+    ctx.beginPath();
+    if(i>1){
+      const pm=pts[i-2];
+      ctx.moveTo((pm.x+p0.x)/2*W,(pm.y+p0.y)/2*H);
+      ctx.quadraticCurveTo(p0.x*W,p0.y*H,(p0.x+p1.x)/2*W,(p0.y+p1.y)/2*H);
+    }else ctx.moveTo(p0.x*W,p0.y*H);
+    ctx.lineTo(p1.x*W,p1.y*H);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /* ═════════ canvases ═════════ */
@@ -979,16 +1340,26 @@ function classify(st){
   if(len<.02&&dt<300)return "dot";
   const closeDist=Math.hypot(pts[0].x-pts[pts.length-1].x,pts[0].y-pts[pts.length-1].y);
   const bw=maxX-minX,bh=maxY-minY;
+  /* 風：快速的豎直筆——高瘦 + 畫得快 */
+  if(bh>.16&&bw<bh*.5&&dt<650)return "wind";
   if(len>.18&&closeDist<Math.max(.06,len*.22)&&bw>.05&&bh>.07)return "circle";
-  let flips=0,dir=0;
+  /* 左右來回塗抹＝水；上下抖動＝顫音 */
+  let yflips=0,ydir=0,xflips=0,xdir=0;
   for(let i=1;i<pts.length;i++){
-    const dy=pts[i].y-pts[i-1].y;
-    if(Math.abs(dy)<.008)continue;
-    const d=dy>0?1:-1;
-    if(dir!==0&&d!==dir)flips++;
-    dir=d;
+    const dy=pts[i].y-pts[i-1].y,dx=pts[i].x-pts[i-1].x;
+    if(Math.abs(dy)>=.008){
+      const d=dy>0?1:-1;
+      if(ydir!==0&&d!==ydir)yflips++;
+      ydir=d;
+    }
+    if(Math.abs(dx)>=.006){
+      const d=dx>0?1:-1;
+      if(xdir!==0&&d!==xdir)xflips++;
+      xdir=d;
+    }
   }
-  if(flips>=4&&bh>.03)return "trem";
+  if(xflips>=4&&bw>.05&&bh<.12)return "water";
+  if(yflips>=4&&bh>.03)return "trem";
   return "line";
 }
 
@@ -1001,7 +1372,7 @@ function recomputeEvents(){
     const voice=PALETTE[st.pal].id,pal=st.pal;
     if(st.type==="dot"){
       const p=pts[0],c=colOf(p.x),r=rowFromY(p.y);
-      events[c].push({kind:"pluck",voice,pal,r,vel:.85,x:p.x,y:p.y});
+      events[c].push({kind:"pluck",voice,pal,st,r,vel:.85,x:p.x,y:p.y});
       continue;
     }
     const colData=new Map();
@@ -1023,6 +1394,26 @@ function recomputeEvents(){
       const m=sps.reduce((a,b)=>a+b,0)/sps.length;
       return .4+.4*m;
     };
+    if(st.type==="wind"){
+      /* 風聲：整筆一個事件，方向由起終點決定 */
+      const p0=pts[0],p1=pts[pts.length-1];
+      const cx=(p0.x+p1.x)/2;
+      events[colOf(cx)].push({kind:"wind",voice,pal,st,down:p1.y>p0.y,
+        vel:.8,x:cx,y:(p0.y+p1.y)/2,span:Math.abs(p1.y-p0.y)});
+      continue;
+    }
+    if(st.type==="water"){
+      /* 水聲：從最左格開始，長度=塗抹的寬度 */
+      let minX2=1,maxX2=0,sumY=0,n2=0;
+      for(const[,d]of colData){
+        minX2=Math.min(minX2,d.x);maxX2=Math.max(maxX2,d.x);
+        sumY+=d.y;n2++;
+      }
+      const cs=colOf(minX2),ce=colOf(maxX2);
+      events[cs].push({kind:"water",voice,pal,st,dur:Math.max(2,ce-cs+1),
+        vel:.75,x:(minX2+maxX2)/2,y:sumY/n2});
+      continue;
+    }
     if(st.type==="circle"){
       let minY=1,maxY=0,sumX=0,n=0,allS=[];
       for(const[,d]of colData){
@@ -1032,13 +1423,13 @@ function recomputeEvents(){
       const rLo=rowFromY(maxY),rHi=rowFromY(minY);
       const rows=[];for(let r=rLo;r<=rHi;r++)rows.push(r);
       const cx=sumX/n,cy=(minY+maxY)/2;
-      events[colOf(cx)].push({kind:"arp",voice,pal,rows,vel:velOf(allS),x:cx,y:cy});
+      events[colOf(cx)].push({kind:"arp",voice,pal,st,rows,vel:velOf(allS),x:cx,y:cy});
       continue;
     }
     if(st.type==="trem"){
       for(const[c,d]of colData){
         const my=d.ys.reduce((a,b)=>a+b,0)/d.ys.length;
-        events[c].push({kind:"trem",voice,pal,r:rowFromY(my),vel:velOf(d.sps),x:d.x,y:my});
+        events[c].push({kind:"trem",voice,pal,st,r:rowFromY(my),vel:velOf(d.sps),x:d.x,y:my});
       }
       continue;
     }
@@ -1070,7 +1461,7 @@ function recomputeEvents(){
         j++;trail.push({x:colArr[j].x,y:colArr[j].y});
       }
       const e=colArr[i];
-      events[e.c].push({kind:"note",voice,pal,r:e.r,vel:e.vel,dur:j-i+1,x:e.x,y:e.y,trail});
+      events[e.c].push({kind:"note",voice,pal,st,r:e.r,vel:e.vel,dur:j-i+1,x:e.x,y:e.y,trail});
       i=j+1;
     }
   }
@@ -1149,6 +1540,11 @@ function endPointer(e){
   if(!state.playing){
     const p=st.pts[0],voice=PALETTE[st.pal].id;
     if(st.type==="dot")playVoiceShort(voice,state.rows[rowFromY(p.y)].midi,null,.5);
+    else if(st.type==="wind"){
+      const pEnd=st.pts[st.pts.length-1];
+      sWind(AC.currentTime+.02,.7,.6,(p.x-.5)*1.4,pEnd.y>p.y);
+    }
+    else if(st.type==="water")sWater(AC.currentTime+.02,.6,1,(p.x-.5)*1.4);
     else if(st.type==="circle"){
       for(const col of events)for(const ev of col)
         if(ev.kind==="arp"&&ev.voice===voice&&Math.abs(ev.x-p.x)<.3){
@@ -1165,16 +1561,24 @@ gridwrap.addEventListener("pointerleave",endPointer);
 /* ═════════ palette UI ═════════ */
 const palSeg=document.getElementById("palSeg");
 function swatchStyle(p){
+  /* 影子模式：色球整體壓暗，像上了一層墨 */
+  const dk=state.shadow?14:0;
   if(inkLike()){
     return{
-      sw:`radial-gradient(circle at 35% 30%, hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l+22}%), hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l}%) 60%, hsl(${p.ink.h} ${p.ink.s}% ${Math.max(10,p.ink.l-14)}%))`,
-      swg:`hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l}% / .5)`,
+      sw:`radial-gradient(circle at 35% 30%, hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l+22-dk}%), hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l-dk}%) 60%, hsl(${p.ink.h} ${p.ink.s}% ${Math.max(6,p.ink.l-14-dk)}%))`,
+      swg:`hsl(${p.ink.h} ${p.ink.s}% ${Math.max(8,p.ink.l-dk)}% / .5)`,
     };
   }
   return{
-    sw:`radial-gradient(circle at 35% 30%, hsl(${p.hue} 90% 72%), hsl(${p.hue} 85% 55%) 60%, hsl(${p.hue} 80% 42%))`,
-    swg:`hsl(${p.hue} 90% 60% / .6)`,
+    sw:`radial-gradient(circle at 35% 30%, hsl(${p.hue} ${90-dk*2}% ${72-dk}%), hsl(${p.hue} ${85-dk*2}% ${55-dk}%) 60%, hsl(${p.hue} 80% ${42-dk}%))`,
+    swg:`hsl(${p.hue} 90% ${60-dk}% / .6)`,
   };
+}
+function updatePaletteNames(){
+  [...palSeg.children].forEach((b,i)=>{
+    b.querySelector(".nm").textContent=state.shadow?PALETTE[i].sname:PALETTE[i].name;
+  });
+  updateSwatches();
 }
 function updateSwatches(){
   [...palSeg.children].forEach((b,i)=>{
@@ -1380,6 +1784,13 @@ function closePopups(){
   settingsPanel.classList.remove("show");
   legendEl.classList.remove("show");
   document.getElementById("drumPanel").classList.remove("show");
+  const dm=document.getElementById("diceModal");
+  /* 骰子未擲完不允許被其他操作關掉 */
+  if(dm.classList.contains("show")&&typeof hasRolled!=="undefined"&&!hasRolled){
+    scrim.classList.add("show");
+    return;
+  }
+  dm.classList.remove("show");
   scrim.classList.remove("show");
 }
 function togglePopup(el){
@@ -1389,7 +1800,16 @@ function togglePopup(el){
 }
 document.getElementById("gearBtn").addEventListener("click",()=>togglePopup(settingsPanel));
 document.getElementById("helpBtn").addEventListener("click",()=>togglePopup(legendEl));
-scrim.addEventListener("pointerdown",closePopups);
+scrim.addEventListener("pointerdown",()=>{
+  /* 骰子視窗開著且還沒擲 → 必須擲完才能離開（搖一下提醒） */
+  const dm=document.getElementById("diceModal");
+  if(dm.classList.contains("show")&&!hasRolled){
+    dm.style.animation="dicenudge .3s ease";
+    setTimeout(()=>dm.style.animation="",320);
+    return;
+  }
+  closePopups();
+});
 
 /* ═════════ 鼓機 UI ═════════ */
 const drumPanel=document.getElementById("drumPanel");
@@ -1429,6 +1849,117 @@ document.getElementById("drumVol").addEventListener("input",e=>{
   drumGain.gain.value=e.target.value/100;
 });
 
+/* ═════════ 骰子：擲出氛圍 ═════════
+   每個氛圍一次改變：調、音階、八度、BPM、鼓組、空間感（delay 深度）。
+   同一張畫，擲一次骰子就是另一首曲子。 */
+const MOODS=[
+  {name:"晨霧", desc:"G 大調五聲・緩・明音色",
+   key:7, scale:0, oct:2, bpm:66,  drum:1, space:.16, shadow:false},
+  {name:"夜雨", desc:"A 小調五聲・靜・影音色",
+   key:9, scale:1, oct:1, bpm:80,  drum:4, space:.11, shadow:true},
+  {name:"市集", desc:"C 藍調・快・明音色",
+   key:0, scale:5, oct:2, bpm:132, drum:5, space:.04, shadow:false},
+  {name:"古道", desc:"D 小調五聲・低吟・影音色",
+   key:2, scale:1, oct:3, bpm:96,  drum:3, space:.08, shadow:true},
+  {name:"溪流", desc:"F 大調・流動・明音色",
+   key:5, scale:2, oct:2, bpm:112, drum:2, space:.07, shadow:false},
+  {name:"雪原", desc:"E♭ 大調五聲・空遠・影音色",
+   key:3, scale:0, oct:4, bpm:56,  drum:0, space:.2,  shadow:true},
+  {name:"竹林", desc:"E 小調五聲・搖曳・影音色",
+   key:4, scale:1, oct:3, bpm:100, drum:2, space:.1,  shadow:true},
+  {name:"廟會", desc:"A 大調五聲・熱鬧・明音色",
+   key:9, scale:0, oct:1, bpm:124, drum:3, space:.05, shadow:false},
+];
+/* 骰面 ↔ 氛圍：六面對應 MOODS 的前六種（溪流、竹林保留給進階；
+   面朝向：f1 前 f2 右 f3 後 f4 左 f5 上 f6 下 */
+const FACE_MOOD=[0,1,2,3,5,7];   // 晨霧 夜雨 市集 古道 雪原 廟會
+const FACE_ROT=[                  // 讓該面轉到正前方的旋轉角
+  {x:0,y:0},{x:0,y:-90},{x:0,y:180},{x:0,y:90},{x:-90,y:0},{x:90,y:0},
+];
+let lastFace=-1,rolling=false,spinX=-18,spinY=32;
+const diceBtn=document.getElementById("diceBtn");
+const diceModal=document.getElementById("diceModal");
+const diceCube=document.getElementById("diceCube");
+const diceResult=document.getElementById("diceResult");
+const moodToast=document.getElementById("moodToast");
+let toastTimer=null;
+
+function applyMood(m){
+  state.keyIndex=m.key;keySel.value=m.key;
+  state.scaleIndex=m.scale;scaleSel.value=m.scale;
+  state.octaves=m.oct;document.getElementById("octSel").value=m.oct;
+  state.bpm=m.bpm;bpmSlider.value=m.bpm;
+  document.getElementById("bpmVal").innerHTML=m.bpm+"<small>BPM</small>";
+  /* 鼓機不自動開啟：骰子只建議 pattern，等使用者自己開鼓時才預選 */
+  if(drumPattern!==0){ /* 已開著鼓 → 換成該氛圍的建議 pattern */
+    drumPattern=m.drum;
+    [...drumSeg.children].forEach((x,k)=>x.classList.toggle("sel",k===m.drum));
+    drumBtn.classList.toggle("active",m.drum!==0);
+  }
+  delaySend.gain.value=m.space;
+  /* 影子音色組 */
+  state.shadow=!!m.shadow;
+  updatePaletteNames();
+  buildLabels();redrawStrokes();
+}
+let hasRolled=false;   // 本次開窗是否已擲過
+function openDice(){
+  hasRolled=false;
+  document.getElementById("diceGo").style.display="none";
+  document.getElementById("diceHint").textContent="點骰子，擲出今天的氛圍";
+  diceResult.classList.remove("show");
+  diceModal.classList.add("show");scrim.classList.add("show");
+}
+function closeDice(){
+  diceModal.classList.remove("show");
+  scrim.classList.remove("show");
+}
+function rollDice(){
+  if(rolling)return;
+  rolling=true;
+  initAudio();initDrums();
+  if(AC.state==="suspended")AC.resume();
+  diceResult.classList.remove("show");
+  /* 不重複擲到同一面 */
+  let f;do{f=Math.floor(Math.random()*6);}while(f===lastFace);
+  lastFace=f;
+  /* 3D 翻滾：多轉 2~3 整圈後停在目標面 */
+  const turnsX=(2+Math.floor(Math.random()*2))*360;
+  const turnsY=(2+Math.floor(Math.random()*2))*360;
+  spinX=FACE_ROT[f].x-18+turnsX;
+  spinY=FACE_ROT[f].y+32+turnsY;
+  diceCube.style.transform=`rotateX(${spinX}deg) rotateY(${spinY}deg)`;
+  /* 滾動聲：三聲輕微木頭碰撞 */
+  const t0=AC.currentTime;
+  dClick(t0+.05,.5);dClick(t0+.35,.4);dClick(t0+.7,.6);
+  setTimeout(()=>{
+    const m=MOODS[FACE_MOOD[f]];
+    applyMood(m);
+    diceResult.querySelector(".rname").textContent=m.name;
+    diceResult.querySelector(".rdesc").textContent=m.desc;
+    diceResult.classList.add("show");
+    /* 落定音：該氛圍的根音輕響 */
+    playVoiceShort("bell",60+m.key+12,null,.5);
+    rolling=false;
+    /* 擲過才放行 */
+    hasRolled=true;
+    document.getElementById("diceGo").style.display="";
+    document.getElementById("diceHint").textContent="滿意就開始作畫，或再擲一次";
+  },1300);
+}
+document.getElementById("diceScene").addEventListener("click",rollDice);
+document.getElementById("diceGo").addEventListener("click",closeDice);
+diceBtn.addEventListener("click",()=>{
+  if(diceModal.classList.contains("show")){
+    if(!hasRolled){ /* 開著且沒擲 → 不給關 */
+      diceModal.style.animation="dicenudge .3s ease";
+      setTimeout(()=>diceModal.style.animation="",320);
+      return;
+    }
+    closeDice();
+  }else{closePopups();openDice();}
+});
+
 document.getElementById("startBtn").addEventListener("click",()=>{
   initAudio();AC.resume();
   const t=AC.currentTime;
@@ -1437,6 +1968,8 @@ document.getElementById("startBtn").addEventListener("click",()=>{
   vFlute(79,t+.4,.5,.5);
   vPad(84,t+.6,.5,.8);
   document.getElementById("startOverlay").classList.add("gone");
+  /* 進入遊戲即彈出 3D 骰子視窗 */
+  setTimeout(openDice,650);
 });
 
 /* ═════════ 紙張紋理生成（宣紙：底色斑駁 + 顆粒 + 長纖維） ═════════ */
@@ -1492,6 +2025,5 @@ const heroImg=new Image();heroImg.src="assets/hero.jpg";
 buildLabels();
 resizeCanvases();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3debe47cc4a4aa3',t:'MTc4OTg4NTQyNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f53282cb7a20e3',t:'MTc5MDEyMDg3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
