@@ -422,6 +422,14 @@
     #bar{flex-wrap:wrap;}
   }
 </style>
+<!-- 訪客統計：Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KWK2YLZTD2"></script>
+<script>
+window.dataLayer=window.dataLayer||[];
+function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+gtag('config','G-KWK2YLZTD2');
+</script>
 </head>
 <body class="ink">
 
@@ -1766,6 +1774,7 @@ function startRec(){
   recBtn.textContent="⏹";recBtn.classList.add("rec");
 }
 function stopRec(){
+  track("video_export");
   if(recorder&&recorder.state!=="inactive")recorder.stop();
   recorder=null;
   recBtn.textContent="⏺";recBtn.classList.remove("rec");
@@ -1822,6 +1831,7 @@ DRUM_PATTERNS.forEach((p,i)=>{
   if(i===0)b.classList.add("sel");
   b.addEventListener("click",()=>{
     drumPattern=i;
+    if(i!==0)track("drum_on");
     for(const x of drumSeg.children)x.classList.toggle("sel",x===b);
     drumBtn.classList.toggle("active",i!==0);
     initAudio();initDrums();
@@ -1940,6 +1950,7 @@ function rollDice(){
     diceResult.classList.add("show");
     /* 落定音：該氛圍的根音輕響 */
     playVoiceShort("bell",60+m.key+12,null,.5);
+    track("dice_roll",m.name);
     rolling=false;
     /* 擲過才放行 */
     hasRolled=true;
@@ -1960,8 +1971,15 @@ diceBtn.addEventListener("click",()=>{
   }else{closePopups();openDice();}
 });
 
+/* ═════════ 使用行為統計（Google Analytics 事件） ═════════ */
+function track(name,label){
+  if(typeof gtag==="function")
+    gtag("event",name,label?{mood:label}:{});
+}
+
 document.getElementById("startBtn").addEventListener("click",()=>{
   initAudio();AC.resume();
+  track("start_drawing");
   const t=AC.currentTime;
   vBell(72,t+.05,.6);
   vMarimba(76,t+.22,.6);
@@ -2025,5 +2043,5 @@ const heroImg=new Image();heroImg.src="assets/hero.jpg";
 buildLabels();
 resizeCanvases();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f53282cb7a20e3',t:'MTc5MDEyMDg3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f5ea8a1a6d07aa',t:'MTc5MDEyODQxMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
