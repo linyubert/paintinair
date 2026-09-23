@@ -2,424 +2,235 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>音畫布 · 觸控白板樂器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音畫布 · 會唱歌的畫</title>
 <style>
   :root{
-    --bg-a:#0b1020; --bg-b:#131a38;
-    --text:#e8ecf8; --text-dim:#8b93b0;
-    --panel:rgba(255,255,255,.055);
-    --panel-border:rgba(255,255,255,.09);
-    --btn-bg:rgba(255,255,255,.07);
-    --btn-border:rgba(255,255,255,.08);
-    --ph:rgba(255,255,255,.07);
-    --radius:18px;
+    --paper:#f4f0e4;
+    --paper-deep:#eae4d2;
+    --ink:#2e2c27;
+    --ink-mid:#5c584f;
+    --ink-dim:#98937f;
+    --seal:#b0402f;
+    --line:rgba(46,44,39,.14);
   }
-  body.paper, body.ink, body.shanshui{
-    --text:#3a3630; --text-dim:#9a938a;
-    --panel:rgba(0,0,0,.045);
-    --panel-border:rgba(0,0,0,.07);
-    --btn-bg:rgba(0,0,0,.05);
-    --btn-border:rgba(0,0,0,.06);
-    --ph:rgba(120,100,70,.08);
-  }
-  body.ink{
-    --text:#33312c; --text-dim:#8f8a80;
-    --ph:rgba(90,85,70,.09);
-  }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;overflow:hidden;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
-    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;
-    background:
-      radial-gradient(1200px 800px at 20% -10%, #1b2450 0%, transparent 60%),
-      radial-gradient(1000px 700px at 95% 110%, #251a4d 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg-a), var(--bg-b));
-    color:var(--text);
-    display:flex;flex-direction:column;
-    user-select:none;-webkit-user-select:none;
-    touch-action:manipulation;
-    transition:background 1s;
+    font-family:"Noto Serif TC","Songti TC","PMingLiU",serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--paper) 0%,var(--paper-deep) 100%);
+    min-height:100vh;position:relative;
+    letter-spacing:.05em;
   }
-  body.paper{
-    background:
-      radial-gradient(1400px 900px at 30% -20%, #fffdf7 0%, transparent 60%),
-      radial-gradient(1100px 800px at 100% 120%, #f3e9d8 0%, transparent 55%),
-      linear-gradient(180deg, #faf6ee, #f1ebdf);
-  }
-  body.ink{
-    background:
-      radial-gradient(1400px 900px at 30% -20%, #faf7ee 0%, transparent 60%),
-      radial-gradient(1100px 800px at 100% 120%, #ece5d3 0%, transparent 55%),
-      linear-gradient(180deg, #f6f2e6, #ede7d7);
-  }
-  body.shanshui{
-    background:linear-gradient(180deg, #f3efe2, #eae4d2);
-  }
-
-  /* ───────── 懸浮頂欄：透明，浮在畫布上 ───────── */
-  header{
-    position:fixed;top:0;left:0;right:0;z-index:30;
-    display:flex;align-items:center;gap:10px;padding:10px 18px;
-    pointer-events:none;
-  }
-  header>*{pointer-events:auto;}
-  .logo{display:flex;align-items:baseline;gap:8px;opacity:.75;}
-  .logo .t1{font-size:17px;font-weight:700;letter-spacing:.06em;}
-  .logo .t2{display:none;}
-  .spacer{flex:1;}
-  .chip{
-    font-size:14px;color:var(--text-dim);
-    background:color-mix(in srgb, var(--panel) 55%, transparent);
-    border:1px solid var(--panel-border);
-    padding:7px 14px;border-radius:999px;
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-  }
-  .chip b{color:var(--text);font-weight:600;}
-
-  #titleInput{
-    font-family:inherit;background:transparent;
-    border:none;border-bottom:2px dashed var(--panel-border);
-    color:var(--text);font-size:19px;font-weight:600;
-    padding:6px 10px;width:230px;text-align:center;
-    outline:none;letter-spacing:.06em;
-  }
-  #titleInput::placeholder{color:var(--text-dim);opacity:.65;font-weight:500;}
-  #titleInput:focus{border-bottom-color:var(--text-dim);}
-
-  /* 骰子：擲出氛圍 */
-  #diceBtn.rolling{animation:diceroll .5s ease;}
-  @keyframes dicenudge{
-    0%,100%{transform:translate(-50%,-50%) scale(1);}
-    30%{transform:translate(calc(-50% - 8px),-50%) scale(1);}
-    60%{transform:translate(calc(-50% + 8px),-50%) scale(1);}
-  }
-  @keyframes diceroll{
-    0%{transform:rotate(0);}
-    40%{transform:rotate(200deg) scale(1.15);}
-    100%{transform:rotate(360deg);}
-  }
-
-  /* ── 3D 骰子懸浮視窗 ── */
-  #diceModal{
-    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
-    z-index:46;
-    display:flex;flex-direction:column;align-items:center;gap:20px;
-    padding:32px 52px 28px;
-    background:color-mix(in srgb, var(--panel) 60%, transparent);
-    border:1px solid var(--panel-border);
-    border-radius:28px;
-    backdrop-filter:blur(24px) saturate(1.2);
-    -webkit-backdrop-filter:blur(24px) saturate(1.2);
-    box-shadow:0 24px 80px -20px rgba(0,0,0,.45);
-    opacity:0;pointer-events:none;
-    transition:opacity .3s, transform .3s;
-  }
-  #diceModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
-  #diceModal .dm-title{
-    font-family:"Noto Serif TC","Songti TC",serif;
-    font-size:19px;letter-spacing:.42em;text-indent:.42em;
-    color:var(--text);font-weight:600;
-  }
-  #diceModal .dm-hint{
-    font-size:13px;letter-spacing:.2em;color:var(--text-dim);
-  }
-  .scene{
-    width:104px;height:104px;
-    perspective:520px;
-    cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .cube{
-    width:100%;height:100%;position:relative;
-    transform-style:preserve-3d;
-    transform:rotateX(-18deg) rotateY(32deg);
-    transition:transform 1.25s cubic-bezier(.22,1.2,.36,1);
-  }
-  .face{
-    position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    font-family:"Noto Serif TC","Songti TC",serif;
-    font-size:28px;font-weight:600;letter-spacing:.08em;
-    color:#3a362e;
-    background:linear-gradient(150deg,#faf6ea,#eee7d4);
-    border:2px solid rgba(70,64,52,.28);
-    border-radius:16px;
-    box-shadow:inset 0 0 26px rgba(120,105,80,.18);
-    backface-visibility:hidden;
-  }
-  .face b{color:var(--seal,#b0402f);}
-  .face.f1{transform:rotateY(  0deg) translateZ(52px);}
-  .face.f2{transform:rotateY( 90deg) translateZ(52px);}
-  .face.f3{transform:rotateY(180deg) translateZ(52px);}
-  .face.f4{transform:rotateY(270deg) translateZ(52px);}
-  .face.f5{transform:rotateX( 90deg) translateZ(52px);}
-  .face.f6{transform:rotateX(-90deg) translateZ(52px);}
-  #diceResult{
-    min-height:58px;text-align:center;
-    opacity:0;transform:translateY(6px);
-    transition:opacity .4s,transform .4s;
-  }
-  #diceResult.show{opacity:1;transform:translateY(0);}
-  #diceResult .rname{
-    font-family:"Noto Serif TC","Songti TC",serif;
-    font-size:30px;font-weight:600;letter-spacing:.4em;text-indent:.4em;
-    color:var(--text);
-  }
-  #diceResult .rdesc{
-    margin-top:6px;font-size:13px;letter-spacing:.2em;color:var(--text-dim);
-  }
-  #diceModal .dm-actions{display:flex;gap:12px;}
-  #diceModal .dm-actions button{min-height:48px;font-size:15px;letter-spacing:.15em;}
-  #diceGo{
-    background:var(--btn-bg);border:1px solid var(--panel-border)!important;
-  }
-  #moodToast{
-    position:fixed;left:50%;top:20%;transform:translateX(-50%) translateY(-8px);
-    z-index:45;pointer-events:none;
-    text-align:center;
-    opacity:0;transition:opacity .4s, transform .4s;
-  }
-  #moodToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  #moodToast .mname{
-    font-family:"Noto Serif TC","Songti TC",serif;
-    font-size:44px;font-weight:600;letter-spacing:.4em;text-indent:.4em;
-    color:var(--text);
-  }
-  #moodToast .mdesc{
-    margin-top:10px;font-size:14px;letter-spacing:.22em;
-    color:var(--text-dim);
-  }
-  #recBtn.rec{
-    background:linear-gradient(140deg,#e0483a,#b53a2b)!important;
-    color:#fff;border-color:transparent;
-    animation:recblink 1.2s ease-in-out infinite;
-  }
-  @keyframes recblink{0%,100%{opacity:1;}50%{opacity:.65;}}
-
-  /* 鼓機彈出面板 */
-  #drumPanel{
-    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(12px);
-    display:flex;flex-direction:column;gap:10px;z-index:40;
-    background:var(--panel);border:1px solid var(--panel-border);
-    border-radius:20px;padding:18px 20px;
-    backdrop-filter:blur(16px);
-    box-shadow:0 12px 40px -8px rgba(0,0,0,.3);
-    opacity:0;pointer-events:none;
-    transition:opacity .25s, transform .25s;
-  }
-  #drumPanel.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
-  #drumPanel .dtitle{font-size:13px;color:var(--text-dim);letter-spacing:.1em;font-weight:600;}
-  #drumPanel .drow{display:flex;gap:8px;flex-wrap:wrap;max-width:min(560px,calc(100vw - 60px));}
-  #drumPanel button{min-height:52px;padding:0 16px;font-size:15px;}
-  #drumVol{width:110px!important;}
-  #drumBtn.active{
-    background:linear-gradient(140deg,#c98a2e,#a8641f);color:#fff;border-color:transparent;
-    box-shadow:0 4px 16px -4px rgba(190,130,40,.5);
-  }
-
-  /* 筆法說明：改為彈出卡片 */
-  #legend{
-    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(12px);
-    display:flex;flex-direction:column;gap:12px;
-    padding:20px 26px;z-index:40;
-    font-size:16px;color:var(--text-dim);letter-spacing:.03em;
-    background:var(--panel);border:1px solid var(--panel-border);
-    border-radius:20px;backdrop-filter:blur(16px);
-    box-shadow:0 12px 40px -8px rgba(0,0,0,.3);
-    opacity:0;pointer-events:none;
-    transition:opacity .25s, transform .25s;
-  }
-  #legend.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
-  #legend span b{color:var(--text);font-weight:600;margin-right:8px;display:inline-block;width:26px;text-align:center;}
-  /* 彈出面板共用玻璃質感 */
-  #legend,#settingsPanel,#drumPanel{
-    background:color-mix(in srgb, var(--panel) 60%, transparent);
-    backdrop-filter:blur(22px) saturate(1.2);
-    -webkit-backdrop-filter:blur(22px) saturate(1.2);
-  }
-
-  /* ───────── canvas stage ───────── */
-  /* 畫布滿版：上下留一點空間給懸浮的欄位 */
-  #stage{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;padding:58px 14px 84px;gap:6px;}
-  #labels{display:grid;flex:0 0 auto;align-content:stretch;}
-  #labels.hidden-labels{display:none;}
-  .rowlabel{
-    display:flex;align-items:center;justify-content:flex-end;
-    padding-right:14px;min-width:60px;
-    font-size:14px;font-weight:600;letter-spacing:.02em;
-    color:var(--text-dim);opacity:.75;white-space:nowrap;
-  }
-  .rowlabel.root{color:var(--text);opacity:.95;}
-
-  #gridwrap{flex:1 1 auto;min-width:0;position:relative;touch-action:none;cursor:crosshair;}
-  #strokeCanvas,#fxCanvas{position:absolute;inset:0;width:100%;height:100%;}
-  #strokeCanvas{z-index:1;}
-  #fxCanvas{z-index:2;pointer-events:none;}
-  #phline{
-    position:absolute;top:0;bottom:0;width:var(--colw,6%);
-    background:linear-gradient(90deg, transparent, var(--ph) 45%, var(--ph) 55%, transparent);
-    border-radius:12px;
-    opacity:0;pointer-events:none;
-    transition:opacity .4s;
-    z-index:3;
-  }
-  #phline.show{opacity:1;}
-
-  /* 山水底圖（shanshui 主題）：淡化為底，筆畫浮於其上 */
-  #bgart{
-    position:absolute;inset:0;z-index:0;pointer-events:none;
-    background:url("assets/hero.jpg") center/cover no-repeat;
-    opacity:0;transition:opacity .8s;
-  }
-  body.shanshui #bgart{opacity:.42;}
-
-  /* 真實紙張紋理：程序生成的紙纖維/顆粒，以 multiply 疊在畫面上 */
   #grain{
-    position:fixed;inset:0;z-index:4;pointer-events:none;
-    background-repeat:repeat;
-    mix-blend-mode:multiply;
-    opacity:.6;
-    transition:opacity 1s;
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background-repeat:repeat;mix-blend-mode:multiply;opacity:.5;
   }
-  body:not(.ink):not(.paper):not(.shanshui) #grain{opacity:0;}
+  main{position:relative;z-index:2;}
+  ::selection{background:rgba(176,64,47,.18);}
 
-  /* ───────── 懸浮底欄：透明玻璃，浮在畫布上 ───────── */
-  #bar{
-    position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    padding:8px 12px;
-    background:color-mix(in srgb, var(--panel) 55%, transparent);
-    border:1px solid var(--panel-border);
-    border-radius:26px;
-    backdrop-filter:blur(18px) saturate(1.2);
-    -webkit-backdrop-filter:blur(18px) saturate(1.2);
-    box-shadow:0 8px 32px -12px rgba(0,0,0,.35);
-    transition:opacity .3s;
+  /* ── 頂欄：極簡一行 ── */
+  nav{
+    position:sticky;top:0;z-index:10;
+    display:flex;align-items:baseline;gap:34px;
+    padding:26px 7vw 20px;
+    background:linear-gradient(180deg, rgba(244,240,228,.92), rgba(244,240,228,0));
   }
-  #bar:not(:hover){opacity:.85;}
-  .group{
-    display:flex;align-items:center;gap:6px;
-    background:transparent;border:none;
-    padding:0 4px;
+  nav .brand{
+    font-size:19px;font-weight:600;letter-spacing:.42em;
   }
-  button{
-    font-family:inherit;color:var(--text);
-    background:transparent;border:1px solid transparent;
-    border-radius:14px;font-size:15px;font-weight:600;
-    min-height:46px;min-width:46px;padding:0 14px;cursor:pointer;
-    transition:background .2s, transform .08s, box-shadow .25s, border-color .2s;
+  nav .brand i{
+    font-style:normal;color:var(--seal);margin-right:2px;
   }
-  button:hover{background:var(--btn-bg);}
-  button:active{transform:scale(.93);background:var(--btn-bg);}
-  button.sel{
-    background:var(--btn-bg);
-    border-color:var(--panel-border);color:var(--text);
-    box-shadow:0 2px 14px -4px rgba(0,0,0,.25);
+  nav .links{display:flex;gap:30px;margin-left:auto;align-items:baseline;}
+  nav a{
+    color:var(--ink-mid);text-decoration:none;font-size:14px;
+    letter-spacing:.28em;transition:color .25s;
+    border-bottom:1px solid transparent;padding-bottom:3px;
   }
-  #playBtn{
-    min-width:68px;min-height:52px;font-size:22px;border-radius:18px;
-    color:#fff;
-    background:linear-gradient(140deg,rgba(34,197,139,.85),rgba(14,165,165,.85));
-    border:1px solid rgba(255,255,255,.18);
-    box-shadow:0 6px 22px -8px rgba(20,200,150,.55);
-    backdrop-filter:blur(6px);
+  nav a:hover{color:var(--ink);border-bottom-color:var(--ink-dim);}
+  nav a.cta{
+    color:var(--paper);background:var(--ink);
+    padding:10px 26px 11px 30px;border-bottom:none;
+    letter-spacing:.32em;
   }
-  body.ink #playBtn, body.shanshui #playBtn{background:linear-gradient(140deg,rgba(78,110,93,.85),rgba(57,88,79,.85));box-shadow:0 6px 18px -8px rgba(60,90,75,.5);}
-  #playBtn.playing{background:linear-gradient(140deg,rgba(255,125,92,.85),rgba(255,92,138,.85));box-shadow:0 6px 22px -8px rgba(255,100,120,.55);}
-  body.ink #playBtn.playing, body.shanshui #playBtn.playing{background:linear-gradient(140deg,rgba(181,84,60,.85),rgba(160,61,51,.85));}
+  nav a.cta:hover{background:#454138;color:var(--paper);}
 
-  /* ───────── 設定彈出面板 ───────── */
-  #settingsPanel{
-    position:fixed;right:18px;bottom:96px;z-index:40;
-    display:flex;flex-direction:column;gap:14px;
-    background:var(--panel);border:1px solid var(--panel-border);
-    border-radius:20px;padding:18px 20px;
-    backdrop-filter:blur(16px);
-    box-shadow:0 12px 40px -8px rgba(0,0,0,.3);
-    opacity:0;pointer-events:none;transform:translateY(12px);
-    transition:opacity .25s, transform .25s;
-    max-width:min(520px,calc(100vw - 36px));
+  /* ── Hero：畫為主體，字為題跋 ── */
+  .hero{
+    max-width:1180px;margin:0 auto;
+    padding:4vh 7vw 0;
+    display:grid;
+    grid-template-columns:minmax(150px,.9fr) 2.4fr;
+    gap:min(5vw,64px);
+    align-items:stretch;
   }
-  #settingsPanel.show{opacity:1;pointer-events:auto;transform:translateY(0);}
-  #settingsPanel .srow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  #settingsPanel .slabel{
-    font-size:13px;color:var(--text-dim);letter-spacing:.08em;
-    min-width:56px;font-weight:600;
+  /* 直排題字 */
+  .hero .inscription{
+    display:flex;justify-content:flex-end;gap:26px;
+    padding-top:2vh;
   }
-  #scrim{
-    position:fixed;inset:0;z-index:39;
-    opacity:0;pointer-events:none;
+  .hero h1{
+    writing-mode:vertical-rl;
+    font-size:clamp(34px,4.6vw,58px);
+    font-weight:600;letter-spacing:.34em;
+    line-height:1.55;
+    height:min(58vh,520px);
   }
-  #scrim.show{pointer-events:auto;}
-  select{
-    font-family:inherit;color:var(--text);
-    background:transparent;border:1px solid var(--panel-border);
-    border-radius:12px;font-size:16px;font-weight:600;
-    min-height:46px;padding:0 12px;cursor:pointer;
-    appearance:none;-webkit-appearance:none;text-align:center;
+  .hero .subcol{
+    writing-mode:vertical-rl;
+    font-size:clamp(13px,1.15vw,15px);
+    color:var(--ink-mid);letter-spacing:.4em;line-height:2.6;
+    height:min(50vh,440px);
+    padding-top:14px;
   }
-  select:hover{background:var(--btn-bg);}
-  option{background:#161c36;color:#e8ecf8;}
-  body.paper option,body.ink option,body.shanshui option{background:#fffdf7;color:#3a3630;}
+  /* 主視覺 */
+  .hero .art{
+    position:relative;
+    align-self:center;
+  }
+  .hero .art img{
+    display:block;width:100%;height:auto;
+    box-shadow:0 30px 80px -30px rgba(46,44,39,.45);
+  }
+  /* 朱砂印 */
+  .hero .art::after{
+    content:"音 畫";
+    position:absolute;right:22px;bottom:22px;
+    writing-mode:vertical-rl;
+    font-size:13px;letter-spacing:.32em;font-weight:600;
+    color:#f2ead8;background:var(--seal);
+    padding:9px 5px;border-radius:3px;
+    opacity:.92;
+    box-shadow:0 1px 5px rgba(0,0,0,.2);
+  }
 
-  /* 音色調色盤 */
-  #palSeg{gap:4px;}
-  .swatch{
-    display:flex;flex-direction:column;align-items:center;gap:2px;
-    background:none;border:none;min-width:48px;min-height:auto;padding:3px 2px;
-    cursor:pointer;font-family:inherit;
+  /* 入口 */
+  .enterwrap{
+    max-width:1180px;margin:0 auto;
+    padding:6vh 7vw 4vh;text-align:center;
   }
-  .swatch .dot{
-    width:38px;height:38px;border-radius:50%;
-    background:var(--sw);
-    box-shadow:inset 0 -4px 10px rgba(0,0,0,.25), inset 0 3px 8px rgba(255,255,255,.35);
-    transition:transform .15s, box-shadow .2s, background .5s;
+  .enter{
+    display:inline-block;
+    font-family:inherit;
+    font-size:17px;letter-spacing:.5em;text-indent:.5em;
+    color:var(--ink);text-decoration:none;
+    border:1px solid var(--ink-mid);
+    padding:20px 64px;
+    transition:background .3s,color .3s,letter-spacing .4s;
   }
-  .swatch .nm{font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.05em;}
-  .swatch.sel .dot{
-    transform:scale(1.18);
-    box-shadow:0 0 0 4px var(--panel-border), 0 0 18px var(--swg),
-      inset 0 -4px 10px rgba(0,0,0,.25), inset 0 3px 8px rgba(255,255,255,.35);
-  }
-  .swatch.sel .nm{color:var(--text);}
-  .swatch:active .dot{transform:scale(.92);}
+  .enter:hover{background:var(--ink);color:var(--paper);letter-spacing:.62em;}
+  .enter .arr{font-family:sans-serif;}
 
-  .bpmwrap{display:flex;align-items:center;gap:10px;}
-  #bpmVal{font-size:18px;font-weight:700;min-width:50px;text-align:center;font-variant-numeric:tabular-nums;}
-  #bpmVal small{display:block;font-size:10px;font-weight:500;color:var(--text-dim);letter-spacing:.15em;}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:46px;background:transparent;cursor:pointer;}
-  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:var(--btn-bg);}
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;margin-top:-10px;
-    background:linear-gradient(140deg,#5d7cff,#8e5cff);
-    box-shadow:0 2px 12px rgba(110,110,255,.6);border:3px solid rgba(255,255,255,.85);
+  /* ── 分隔：墨線 ── */
+  .divider{
+    max-width:640px;margin:5vh auto;display:block;opacity:.55;
   }
-  body.ink input[type=range]::-webkit-slider-thumb, body.shanshui input[type=range]::-webkit-slider-thumb{background:linear-gradient(140deg,#4a463e,#6b665b);box-shadow:0 2px 8px rgba(60,55,45,.4);}
-  input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:var(--btn-bg);}
-  input[type=range]::-moz-range-thumb{
-    width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,.85);
-    background:linear-gradient(140deg,#5d7cff,#8e5cff);
-  }
-  .seg{display:flex;gap:6px;}
 
-  #startOverlay{
-    position:fixed;inset:0;z-index:50;
-    background:rgba(8,11,24,.82);backdrop-filter:blur(14px);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-    color:#e8ecf8;transition:opacity .5s;text-align:center;
+  /* ── 章節 ── */
+  section{max-width:1080px;margin:0 auto;padding:7vh 7vw;}
+  .sechead{
+    display:flex;align-items:center;gap:28px;margin-bottom:7vh;
   }
-  #startOverlay.gone{opacity:0;pointer-events:none;}
-  #startOverlay h1{font-size:44px;font-weight:700;letter-spacing:.08em;}
-  #startOverlay p{color:#8b93b0;font-size:17px;letter-spacing:.05em;line-height:1.9;}
-  #startBtn{
-    font-size:24px;min-height:80px;min-width:220px;border-radius:24px;color:#fff;
-    background:linear-gradient(140deg,#5d7cff,#8e5cff);border:none;
-    box-shadow:0 8px 40px -8px rgba(110,110,255,.7);
+  .sechead h2{
+    font-size:24px;font-weight:600;letter-spacing:.5em;white-space:nowrap;
   }
-  @media (max-width:1280px){
-    #bar{flex-wrap:wrap;}
+  .sechead .rule{flex:1;height:1px;background:var(--line);}
+  .sechead .no{
+    font-size:13px;color:var(--ink-dim);letter-spacing:.2em;white-space:nowrap;
+  }
+
+  /* 特色：二欄清單，墨字編號 */
+  .feats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:0 min(6vw,80px);
+  }
+  .feat{
+    display:flex;gap:24px;align-items:flex-start;
+    padding:30px 0;border-bottom:1px solid var(--line);
+  }
+  .feat .fnum{
+    flex:0 0 auto;
+    font-size:15px;color:var(--ink-dim);
+    letter-spacing:.1em;padding-top:5px;
+    font-variant-numeric:tabular-nums;
+  }
+  .feat h3{
+    font-size:18px;font-weight:600;letter-spacing:.22em;margin-bottom:10px;
+  }
+  .feat h3 em{
+    font-style:normal;color:var(--seal);
+  }
+  .feat p{
+    color:var(--ink-mid);font-size:14.5px;line-height:2.1;letter-spacing:.06em;
+  }
+
+  /* 怎麼玩：橫卷三段 */
+  .steps{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:min(4vw,52px);
+  }
+  .step{position:relative;padding-top:26px;}
+  .step::before{
+    content:"";position:absolute;top:0;left:0;
+    width:42px;height:3px;background:var(--ink);
+  }
+  .step .zh{
+    font-size:32px;font-weight:600;letter-spacing:.14em;
+    margin-bottom:16px;
+  }
+  .step .zh span{color:var(--seal);font-size:15px;letter-spacing:.2em;margin-right:12px;}
+  .step p{color:var(--ink-mid);font-size:14.5px;line-height:2.1;}
+
+  /* 關於我 */
+  #about .aboutgrid{
+    display:grid;grid-template-columns:auto 1fr;gap:min(7vw,90px);
+    align-items:center;max-width:760px;margin:0 auto;
+  }
+  #about .name-v{
+    writing-mode:vertical-rl;
+    font-size:44px;font-weight:600;letter-spacing:.3em;
+    border-right:1px solid var(--line);
+    padding-right:34px;
+    height:220px;
+  }
+  #about .bio{
+    color:var(--ink-mid);font-size:15px;line-height:2.4;letter-spacing:.08em;
+  }
+  .social{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;}
+  .social a{
+    display:inline-flex;align-items:center;gap:10px;
+    color:var(--ink);text-decoration:none;font-size:14px;letter-spacing:.14em;
+    border:1px solid var(--ink-mid);
+    padding:12px 24px;
+    transition:background .3s,color .3s;
+  }
+  .social a:hover{background:var(--ink);color:var(--paper);}
+  .social svg{width:17px;height:17px;fill:currentColor;}
+
+  footer{
+    text-align:center;padding:6vh 7vw 7vh;
+    color:var(--ink-dim);font-size:12.5px;letter-spacing:.3em;
+  }
+  footer .sealdot{color:var(--seal);}
+
+  /* ── 響應式 ── */
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;gap:36px;}
+    .hero .inscription{
+      justify-content:center;order:2;padding-top:0;
+    }
+    .hero h1{height:auto;min-height:300px;}
+    .hero .subcol{height:auto;min-height:260px;}
+    .hero .art{order:1;}
+    nav .links{gap:16px;}
+    nav a{letter-spacing:.12em;}
+    #about .aboutgrid{grid-template-columns:1fr;gap:40px;}
+    #about .name-v{
+      writing-mode:horizontal-tb;height:auto;border-right:none;
+      border-bottom:1px solid var(--line);padding:0 0 22px;
+    }
   }
 </style>
 <!-- 訪客統計：Google Analytics -->
@@ -431,1639 +242,149 @@ gtag('js',new Date());
 gtag('config','G-KWK2YLZTD2');
 </script>
 </head>
-<body class="ink">
-
-<div id="startOverlay">
-  <h1>♪ 音畫布</h1>
-  <p>如作水墨——筆有濃淡，畫有留白，眾人共繪一卷，其聲自和。<br>
-  輕點是短音 · 拖曳是旋律 · 抖動成顫音 · 畫圈成琶音 · 豎畫成風 · 塗抹成水</p>
-  <button id="startBtn">開始</button>
-</div>
-
-<header>
-  <a href="index.html" title="回首頁" style="pointer-events:auto;text-decoration:none;color:var(--text);opacity:.75;font-size:17px;font-weight:700;letter-spacing:.06em;">← </a>
-  <div class="logo"><span class="t1">♪ 音畫布</span></div>
-  <input id="titleInput" type="text" placeholder="✎ 為作品取個名字…" maxlength="24">
-  <div class="spacer"></div>
-  <div class="chip" id="scaleChip"><b>C</b> 大調五聲音階</div>
-  <button id="fsBtn" title="全螢幕" style="min-height:38px;min-width:38px;font-size:16px;padding:0 10px;">⛶</button>
-</header>
-
+<body>
 <div id="grain"></div>
-<div id="scrim"></div>
-<div id="moodToast"><div class="mname"></div><div class="mdesc"></div></div>
+<main>
 
-<div id="diceModal">
-  <div class="dm-title">擲骰定調</div>
-  <div class="scene" id="diceScene">
-    <div class="cube" id="diceCube">
-      <div class="face f1">晨<b>霧</b></div>
-      <div class="face f2">夜<b>雨</b></div>
-      <div class="face f3">市<b>集</b></div>
-      <div class="face f4">古<b>道</b></div>
-      <div class="face f5">雪<b>原</b></div>
-      <div class="face f6">廟<b>會</b></div>
+<nav>
+  <span class="brand"><i>音</i>畫布</span>
+  <div class="links">
+    <a href="#features">特色</a>
+    <a href="#how">怎麼玩</a>
+    <a href="#about">關於我</a>
+    <a class="cta" href="play.html">入畫</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="inscription">
+    <div class="subcol">觸控白板上的視覺化樂器・筆有濃淡・畫有留白・眾人共繪一卷・其聲自和</div>
+    <h1>畫一條線聽見一段旋律</h1>
+  </div>
+  <div class="art">
+    <img src="assets/hero.jpg" alt="水墨山水間，一道如旋律般起伏的墨線橫貫天際，墨點如飛鳥如音符">
+  </div>
+</div>
+
+<div class="enterwrap">
+  <a class="enter" href="play.html">展 卷 作 畫</a>
+</div>
+
+<svg class="divider" viewBox="0 0 640 40" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 24 C 120 8, 210 34, 320 20 S 520 6, 620 22"
+    fill="none" stroke="#2e2c27" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>
+  <circle cx="320" cy="20" r="3.2" fill="#b0402f" opacity=".85"/>
+</svg>
+
+<section id="features">
+  <div class="sechead">
+    <h2>特色</h2>
+    <div class="rule"></div>
+    <span class="no">不需樂理基礎・畫出來的都好聽</span>
+  </div>
+  <div class="feats">
+    <div class="feat">
+      <span class="fnum">壹</span>
+      <div>
+        <h3>筆勢即<em>奏法</em></h3>
+        <p>輕點是短音，拖曳是旋律線；快筆濃、慢筆淡，抖動成顫音，畫圈成琶音。一支筆，五種聲音的表情。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">貳</span>
+      <div>
+        <h3>色彩即<em>音色</em></h3>
+        <p>濃墨鐘琴、赭石木琴、胭脂撥弦、花青笛聲、紫灰星光。分組認領顏色共繪，一張畫便是一首合奏。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">參</span>
+      <div>
+        <h3>水墨的<em>美學</em></h3>
+        <p>宣紙紋理、墨色暈染、飛白筆觸。全班數十筆疊上，畫面始終是一幅畫，聲音始終和諧。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">肆</span>
+      <div>
+        <h3>鼓聲為<em>底</em></h3>
+        <p>心跳、散步、進行曲、雨滴、慶典。五組節奏伴奏，讓集體創作自然對齊拍子。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">伍</span>
+      <div>
+        <h3>為教學<em>而生</em></h3>
+        <p>十二調、六種音階；音名、唱名、簡譜三種顯示。音階鎖定，畫布上不存在錯的音。</p>
+      </div>
+    </div>
+    <div class="feat">
+      <span class="fnum">陸</span>
+      <div>
+        <h3>作品<em>帶得走</em></h3>
+        <p>為作品題名，一鍵錄影。畫面與演奏一同輸出成影片，成果發表、與家長分享都方便。</p>
+      </div>
     </div>
   </div>
-  <div class="dm-hint" id="diceHint">點骰子，擲出今天的氛圍</div>
-  <div id="diceResult"><div class="rname"></div><div class="rdesc"></div></div>
-  <div class="dm-actions">
-    <button id="diceGo" style="display:none;">開始作畫</button>
+</section>
+
+<section id="how">
+  <div class="sechead">
+    <h2>怎麼玩</h2>
+    <div class="rule"></div>
+    <span class="no">三步驟・共創一幅會唱歌的畫</span>
   </div>
-</div>
-
-<div id="legend">
-  <span><b>彩</b>色彩＝音色</span>
-  <span><b>●</b>輕點＝短音</span>
-  <span><b>─</b>拖曳＝旋律線</span>
-  <span><b>疾</b>快筆濃．慢筆淡</span>
-  <span><b>⌇</b>上下抖動＝顫音</span>
-  <span><b>◯</b>畫圈＝琶音</span>
-  <span><b>↓</b>快速豎畫＝風聲</span>
-  <span><b>〜</b>左右塗抹＝水聲</span>
-</div>
-
-<div id="drumPanel">
-  <span class="dtitle">🥁 鼓機伴奏</span>
-  <div class="drow" id="drumSeg"></div>
-  <div class="srow" style="display:flex;align-items:center;gap:10px;">
-    <span class="dtitle">音量</span>
-    <input type="range" id="drumVol" min="0" max="100" value="60" step="1">
-  </div>
-</div>
-
-<div id="settingsPanel">
-  <div class="srow">
-    <span class="slabel">速度</span>
-    <div class="bpmwrap">
-      <div id="bpmVal">100<small>BPM</small></div>
-      <input type="range" id="bpmSlider" min="50" max="180" value="100" step="1">
+  <div class="steps">
+    <div class="step">
+      <div class="zh"><span>其一</span>選色</div>
+      <p>調色盤上每種顏色是一種樂器。分組認領顏色，便是認領一個聲部。</p>
+    </div>
+    <div class="step">
+      <div class="zh"><span>其二</span>作畫</div>
+      <p>高處是高音，低處是低音。畫山是旋律起伏，畫雨是輕快短音，畫圈是流動琶音。</p>
+    </div>
+    <div class="step">
+      <div class="zh"><span>其三</span>聆聽</div>
+      <p>掃描光自左而右掃過畫卷，每一筆都被讀成音樂。題名、錄影，作品就完成了。</p>
     </div>
   </div>
-  <div class="srow">
-    <span class="slabel">音樂</span>
-    <select id="keySel"></select>
-    <select id="scaleSel"></select>
-    <select id="octSel">
-      <option value="1">1 個八度</option>
-      <option value="2" selected>2 個八度</option>
-      <option value="3">3 個八度</option>
-      <option value="4">4 個八度</option>
-    </select>
+</section>
+
+<section id="about">
+  <div class="sechead">
+    <h2>關於我</h2>
+    <div class="rule"></div>
   </div>
-  <div class="srow">
-    <span class="slabel">音名</span>
-    <div class="seg" id="labelSeg">
-      <button data-mode="none" class="sel">隱藏</button>
-      <button data-mode="letter">C D E</button>
-      <button data-mode="solfege">Do Re Mi</button>
-      <button data-mode="number">1 2 3</button>
+  <div class="aboutgrid">
+    <div class="name-v">Dato.</div>
+    <div>
+      <p class="bio">音樂・教育・創作——<br>讓每個孩子都能畫出自己的聲音。</p>
+      <div class="social">
+        <a href="https://www.threads.com/@lycbert" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.781 3.63 2.695 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32l-1.757-1.18c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/></svg>
+          Threads
+        </a>
+        <a href="https://www.youtube.com/@datoemusic" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          YouTube
+        </a>
+      </div>
     </div>
   </div>
-  <div class="srow">
-    <span class="slabel">拍數</span>
-    <div class="seg" id="colSeg">
-      <button data-cols="8">8 拍</button>
-      <button data-cols="16" class="sel">16 拍</button>
-    </div>
-    <span class="slabel" style="margin-left:8px;">畫風</span>
-    <button id="themeBtn">水墨</button>
-  </div>
-</div>
+</section>
 
-<div id="stage">
-  <div id="labels" class="hidden-labels"></div>
-  <div id="gridwrap">
-    <div id="bgart"></div>
-    <canvas id="strokeCanvas"></canvas>
-    <canvas id="fxCanvas"></canvas>
-    <div id="phline"></div>
-  </div>
-</div>
+<footer>音畫布 <span class="sealdot">・</span> a sound canvas by Dato.</footer>
 
-<div id="bar">
-  <button id="playBtn">▶</button>
-
-  <div class="group" id="palSeg"></div>
-
-  <button id="undoBtn" title="復原">↩</button>
-  <button id="clearBtn" title="清除">✕</button>
-  <button id="recBtn" title="錄影">⏺</button>
-  <button id="drumBtn" title="鼓機伴奏">🥁</button>
-  <button id="diceBtn" title="擲骰換氛圍">骰</button>
-  <button id="helpBtn" title="筆法說明">？</button>
-  <button id="gearBtn" title="設定">⚙</button>
-</div>
+</main>
 
 <script>
 "use strict";
-
-/* ═════════ music data ═════════ */
-const KEYS=[
-  {name:"C",pc:0,flats:false},{name:"C♯",pc:1,flats:false},{name:"D",pc:2,flats:false},
-  {name:"E♭",pc:3,flats:true},{name:"E",pc:4,flats:false},{name:"F",pc:5,flats:true},
-  {name:"F♯",pc:6,flats:false},{name:"G",pc:7,flats:false},{name:"A♭",pc:8,flats:true},
-  {name:"A",pc:9,flats:false},{name:"B♭",pc:10,flats:true},{name:"B",pc:11,flats:false},
-];
-const SCALES=[
-  {name:"大調五聲音階",iv:[0,2,4,7,9]},
-  {name:"小調五聲音階",iv:[0,3,5,7,10]},
-  {name:"大調",iv:[0,2,4,5,7,9,11]},
-  {name:"自然小調",iv:[0,2,3,5,7,8,10]},
-  {name:"和聲小調",iv:[0,2,3,5,7,8,11]},
-  {name:"藍調音階",iv:[0,3,5,6,7,10]},
-];
-const SHARP_NAMES=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
-const FLAT_NAMES=["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
-const SOLFEGE={0:"Do",1:"Di",2:"Re",3:"Me",4:"Mi",5:"Fa",6:"Fi",7:"Sol",8:"Le",9:"La",10:"Te",11:"Si"};
-const JIANPU={0:"1",1:"♯1",2:"2",3:"♭3",4:"3",5:"4",6:"♯4",7:"5",8:"♭6",9:"6",10:"♭7",11:"7"};
-
-/* ═════════ 調色盤：顏色＝音色
-   一般主題用亮彩 hue；水墨主題用文人畫淡彩（墨、赭石、胭脂、花青、紫灰） ═════════ */
-const PALETTE=[
-  {id:"bell",   name:"鐘琴", sname:"古鐘", hue:45,  ink:{h:225,s:10,l:24}}, // 濃墨
-  {id:"marimba",name:"木琴", sname:"夜木", hue:145, ink:{h:26, s:45,l:40}, tex:"pencil"}, // 赭石・鉛筆質地
-  {id:"pluck",  name:"撥弦", sname:"沉弦", hue:8,   ink:{h:352,s:52,l:44}}, // 胭脂
-  {id:"flute",  name:"笛聲", sname:"塤聲", hue:205, ink:{h:212,s:40,l:40}}, // 花青
-  {id:"pad",    name:"星光", sname:"夜霧", hue:275, ink:{h:272,s:22,l:42}}, // 紫灰
-];
-
-/* ═════════ state ═════════ */
-const state={
-  keyIndex:0, scaleIndex:0, octaves:2, cols:16, bpm:100,
-  labelMode:"none", playing:false, pal:0, theme:"ink",
-  shadow:false,   // 影子音色組（骰子決定）
-  rows:[],
-};
-let strokes=[];   // {type, pal, pts:[{x,y,t,s}]}
-let events=[];    // events[col]=[{kind,pal,voice,r|rows,vel,dur,x,y,trail}]
-
-function rebuildRows(){
-  const key=KEYS[state.keyIndex],scale=SCALES[state.scaleIndex];
-  /* 八度越多，起始音往下移：往低音擴展，高音不會衝過頭刺耳 */
-  const baseDrop=state.octaves>=4?24:(state.octaves===3?12:0);
-  const baseMidi=60+key.pc-(key.pc>7?12:0)-baseDrop;
-  const rows=[];
-  for(let o=0;o<state.octaves;o++)
-    for(const semi of scale.iv)rows.push({midi:baseMidi+o*12+semi,semi,oct:o});
-  rows.push({midi:baseMidi+state.octaves*12,semi:0,oct:state.octaves});
-  state.rows=rows;
-}
-function noteLabel(row){
-  const key=KEYS[state.keyIndex];
-  const pc=((row.midi%12)+12)%12;
-  switch(state.labelMode){
-    case "letter":return (key.flats?FLAT_NAMES:SHARP_NAMES)[pc];
-    case "solfege":return SOLFEGE[row.semi];
-    case "number":return JIANPU[row.semi];
-    default:return "";
-  }
-}
-function rowFromY(y){
-  const R=state.rows.length;
-  const vr=Math.min(R-1,Math.max(0,Math.floor(y*R)));
-  return R-1-vr;
-}
-const colOf=x=>Math.min(state.cols-1,Math.max(0,Math.floor(x*state.cols)));
-
-/* ═════════ audio ═════════ */
-let AC=null,master=null,delaySend=null;
-function initAudio(){
-  if(AC)return;
-  AC=new (window.AudioContext||window.webkitAudioContext)();
-  master=AC.createGain();master.gain.value=.9;
-  const comp=AC.createDynamicsCompressor();
-  comp.threshold.value=-18;comp.ratio.value=8;comp.knee.value=10;
-  master.connect(comp);comp.connect(AC.destination);
-  delaySend=AC.createGain();delaySend.gain.value=.07;
-  const dly=AC.createDelay(1);dly.delayTime.value=.3;
-  const fb=AC.createGain();fb.gain.value=.16;
-  const damp=AC.createBiquadFilter();damp.type="lowpass";damp.frequency.value=1600;
-  delaySend.connect(dly);dly.connect(damp);damp.connect(fb);fb.connect(dly);
-  damp.connect(master);
-}
-const midiToFreq=m=>440*Math.pow(2,(m-69)/12);
-
-/* ═════════ 鼓機（合成鼓組） ═════════ */
-let drumGain=null;
-function initDrums(){
-  if(drumGain)return;
-  drumGain=AC.createGain();
-  drumGain.gain.value=.6;
-  drumGain.connect(master);
-}
-function dKick(t,vel=1){
-  const o=AC.createOscillator(),g=AC.createGain();
-  o.type="sine";
-  o.frequency.setValueAtTime(150,t);
-  o.frequency.exponentialRampToValueAtTime(45,t+.12);
-  g.gain.setValueAtTime(.9*vel,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.28);
-  o.connect(g);g.connect(drumGain);
-  o.start(t);o.stop(t+.32);
-}
-function dSnare(t,vel=1){
-  const len=.18,buf=AC.createBuffer(1,AC.sampleRate*len,AC.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.6);
-  const src=AC.createBufferSource();src.buffer=buf;
-  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1800;bp.Q.value=.9;
-  const g=AC.createGain();g.gain.value=.5*vel;
-  src.connect(bp);bp.connect(g);g.connect(drumGain);
-  const o=AC.createOscillator(),g2=AC.createGain();
-  o.type="triangle";o.frequency.setValueAtTime(185,t);
-  g2.gain.setValueAtTime(.3*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.001,t+.09);
-  o.connect(g2);g2.connect(drumGain);
-  src.start(t);o.start(t);o.stop(t+.1);
-}
-function dHat(t,vel=1,open=false){
-  const len=open?.22:.05;
-  const buf=AC.createBuffer(1,AC.sampleRate*len,AC.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,open?1.2:2);
-  const src=AC.createBufferSource();src.buffer=buf;
-  const hp=AC.createBiquadFilter();hp.type="highpass";hp.frequency.value=7500;
-  const g=AC.createGain();g.gain.value=(open?.22:.18)*vel;
-  src.connect(hp);hp.connect(g);g.connect(drumGain);
-  src.start(t);
-}
-function dTom(t,vel=1,pitch=110){
-  const o=AC.createOscillator(),g=AC.createGain();
-  o.type="sine";
-  o.frequency.setValueAtTime(pitch*1.4,t);
-  o.frequency.exponentialRampToValueAtTime(pitch*.85,t+.15);
-  g.gain.setValueAtTime(.55*vel,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.3);
-  o.connect(g);g.connect(drumGain);
-  o.start(t);o.stop(t+.34);
-}
-function dClick(t,vel=1){ // 木魚/邊擊，配水墨很好聽
-  const o=AC.createOscillator(),g=AC.createGain();
-  o.type="sine";o.frequency.setValueAtTime(1250,t);
-  o.frequency.exponentialRampToValueAtTime(700,t+.03);
-  g.gain.setValueAtTime(.4*vel,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.07);
-  o.connect(g);g.connect(drumGain);
-  o.start(t);o.stop(t+.09);
-}
-
-/* 每格 = 八分音符，pattern 長度 16（8 拍模式自動取前 8 格）
-   K=大鼓 S=小鼓 H=閉鈸 O=開鈸 T=中鼓 C=木魚 */
-const DRUM_PATTERNS=[
-  {name:"關閉",steps:null},
-  {name:"心跳",steps:[
-    "K...","....","H...","....","K...","....","H...","....",
-    "K...","....","H...","....","K...","....","H...","...."]},
-  {name:"散步",steps:[
-    "K.H.","..H.","S.H.","..H.","K.H.","..H.","S.H.","..H.",
-    "K.H.","..H.","S.H.","..H.","K.H.","K.H.","S.H.","..O."]},
-  {name:"進行曲",steps:[
-    "K.H.","H...","S.H.","H...","K.H.","H...","S.H.","H...",
-    "K.H.","H...","S.H.","H...","K.H.","S...","S.H.","S..."]},
-  {name:"雨滴",steps:[
-    "C...","..H.","C...","....","C...","..H.","C...","..O.",
-    "C...","..H.","C...","....","C...","..H.","C.T.","...."]},
-  {name:"慶典",steps:[
-    "K.H.","..H.","K.S.","..H.","K.H.","..H.","S...","T...",
-    "K.H.","..H.","K.S.","..H.","K.H.","T...","S.T.","O..."]},
-];
-let drumPattern=0; // index into DRUM_PATTERNS
-function fireDrums(col,when){
-  const pat=DRUM_PATTERNS[drumPattern];
-  if(!pat.steps)return;
-  const s=pat.steps[col%16];
-  const half=colDur()/2; // 十六分音符位置
-  for(let i=0;i<s.length;i++){
-    const t=when+(i>=2?half:0); // 前兩碼=正拍，後兩碼=後半拍
-    switch(s[i]){
-      case "K":dKick(t);break;
-      case "S":dSnare(t);break;
-      case "H":dHat(t);break;
-      case "O":dHat(t,1,true);break;
-      case "T":dTom(t);break;
-      case "C":dClick(t);break;
-    }
-  }
-}
-
-/* 立體聲定位：依畫面 x 位置分配左右聲道（pan -1~1，undefined=置中） */
-function mkOut(pan){
-  const g=AC.createGain();
-  if(pan!==undefined&&AC.createStereoPanner){
-    const p=AC.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));
-    g.connect(p);p.connect(master);
-  }else g.connect(master);
-  g.connect(delaySend);
-  return g;
-}
-
-/* 鐘琴：金屬質感——非諧泛音（2.76×、5.40×）+ 雙振盪微差拍頻的閃爍 + 長餘響 */
-function vBell(midi,t,vel=1,decay=1.8,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.42*vel,t+.006);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o1b=AC.createOscillator();o1b.type="sine";o1b.frequency.value=f*1.0045; // 拍頻閃爍
-  const g1b=AC.createGain();g1b.gain.value=.5;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.76;    // 鐘的非諧泛音
-  const g2=AC.createGain();g2.gain.setValueAtTime(.16*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+decay*.5);
-  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*5.40;
-  const g3=AC.createGain();g3.gain.setValueAtTime(.07*vel,t);
-  g3.gain.exponentialRampToValueAtTime(.0001,t+decay*.25);
-  o1.connect(g);o1b.connect(g1b);g1b.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
-  o1.start(t);o1b.start(t);o2.start(t);o3.start(t);
-  const end=t+decay+.2;o1.stop(end);o1b.stop(end);o2.stop(end);o3.stop(end);
-}
-/* 木琴：木頭質感——強基音短衰減 + 木琴特有的 4× 調律泛音 + 敲擊瞬間的木頭「叩」聲 */
-function vMarimba(midi,t,vel=1,decay=.32,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.6*vel,t+.003);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*4.0;     // 木琴板的調律泛音
-  const g2=AC.createGain();g2.gain.setValueAtTime(.24*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+.09);
-  const o3=AC.createOscillator();o3.type="triangle";o3.frequency.value=f*7.1; // 敲擊瞬間的「叩」
-  const g3=AC.createGain();g3.gain.setValueAtTime(.12*vel,t);
-  g3.gain.exponentialRampToValueAtTime(.0001,t+.02);
-  o1.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
-  o1.start(t);o2.start(t);o3.start(t);
-  const end=t+decay+.1;o1.stop(end);o2.stop(end);o3.stop(end);
-}
-function vPluck(midi,t,vel=1,decay=.55,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.42*vel,t+.005);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o=AC.createOscillator();o.type="sawtooth";o.frequency.value=f;
-  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.Q.value=2;
-  lp.frequency.setValueAtTime(Math.min(9000,f*6),t);
-  lp.frequency.exponentialRampToValueAtTime(f*1.4,t+Math.min(.4,decay*.4));
-  o.connect(lp);lp.connect(g);
-  o.start(t);o.stop(t+decay+.15);
-}
-function vFlute(midi,t,vel=1,dur=.35,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  const lvl=.34*vel;
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(lvl,t+.09);
-  g.gain.setValueAtTime(lvl,t+dur);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.25);
-  const o1=AC.createOscillator();o1.type="triangle";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f;
-  const g2=AC.createGain();g2.gain.value=.5;
-  const vib=AC.createOscillator();vib.frequency.value=5.2;
-  const vibG=AC.createGain();vibG.gain.value=f*.007;
-  vib.connect(vibG);vibG.connect(o1.frequency);vibG.connect(o2.frequency);
-  o1.connect(g);o2.connect(g2);g2.connect(g);
-  o1.start(t);o2.start(t);vib.start(t);
-  const end=t+dur+.35;o1.stop(end);o2.stop(end);vib.stop(end);
-}
-function vPad(midi,t,vel=1,dur=.5,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  const lvl=.3*vel;
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(lvl,t+.12);
-  g.gain.setValueAtTime(lvl,t+dur);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.6);
-  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=f*4;
-  lp.connect(g);
-  const o1=AC.createOscillator();o1.type="triangle";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.003;
-  const g2=AC.createGain();g2.gain.value=.25;
-  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*1.498;
-  const g3=AC.createGain();g3.gain.value=.12;
-  const lfo=AC.createOscillator();lfo.frequency.value=4.5;
-  const lfoG=AC.createGain();lfoG.gain.value=lvl*.12;
-  lfo.connect(lfoG);lfoG.connect(g.gain);
-  o1.connect(lp);o2.connect(g2);g2.connect(lp);o3.connect(g3);g3.connect(lp);
-  o1.start(t);o2.start(t);o3.start(t);lfo.start(t);
-  const end=t+dur+.8;o1.stop(end);o2.stop(end);o3.stop(end);lfo.stop(end);
-}
-/* ═════════ 影子音色組（暗面的五種）═════════ */
-/* 古鐘：低沉銅鐘——基音下移一個八度、更慢的起音、更長更暗的餘響 */
-function vDarkBell(midi,t,vel=1,decay=2.6,pan){
-  const f=midiToFreq(midi-12);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.4*vel,t+.03);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.4;  // 更低的非諧泛音
-  const g2=AC.createGain();g2.gain.setValueAtTime(.2*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+decay*.6);
-  const o3=AC.createOscillator();o3.type="sine";o3.frequency.value=f*1.007; // 沉緩拍頻
-  const g3=AC.createGain();g3.gain.value=.5;
-  o1.connect(g);o2.connect(g2);g2.connect(g);o3.connect(g3);g3.connect(g);
-  o1.start(t);o2.start(t);o3.start(t);
-  const end=t+decay+.2;o1.stop(end);o2.stop(end);o3.stop(end);
-}
-/* 夜木：悶木鼓——低八度、圓鈍如手掌拍空心木 */
-function vDarkMarimba(midi,t,vel=1,decay=.4,pan){
-  const f=midiToFreq(midi-12);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.6*vel,t+.006);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const o1b=AC.createOscillator();o1b.type="sine";o1b.frequency.value=f*.5; // 次八度共鳴
-  const g1b=AC.createGain();g1b.gain.setValueAtTime(.25*vel,t);
-  g1b.gain.exponentialRampToValueAtTime(.0001,t+decay*.8);
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f*2.8;
-  const g2=AC.createGain();g2.gain.setValueAtTime(.1*vel,t);
-  g2.gain.exponentialRampToValueAtTime(.0001,t+.04);
-  o1.connect(g);o1b.connect(g1b);g1b.connect(g);o2.connect(g2);g2.connect(g);
-  o1.start(t);o1b.start(t);o2.start(t);
-  const end=t+decay+.1;o1.stop(end);o1b.stop(end);o2.stop(end);
-}
-/* 沉弦：低音撥弦——古琴般的深沉，慢滑的濾波衰落 */
-function vDarkPluck(midi,t,vel=1,decay=1.1,pan){
-  const f=midiToFreq(midi-12);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.44*vel,t+.008);
-  g.gain.exponentialRampToValueAtTime(.0001,t+decay);
-  const o=AC.createOscillator();o.type="sawtooth";o.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="sine";o2.frequency.value=f;
-  const g2=AC.createGain();g2.gain.value=.5;
-  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.Q.value=1.2;
-  lp.frequency.setValueAtTime(Math.min(3200,f*5),t);
-  lp.frequency.exponentialRampToValueAtTime(Math.max(120,f*.9),t+decay*.7);
-  o.connect(lp);o2.connect(g2);g2.connect(g);lp.connect(g);
-  o.start(t);o2.start(t);
-  o.stop(t+decay+.15);o2.stop(t+decay+.15);
-}
-/* 塤聲：陶塤——氣息厚、微啞、almost 純音帶氣噪 */
-function vXun(midi,t,vel=1,dur=.4,pan){
-  const f=midiToFreq(midi);
-  const g=mkOut(pan);
-  const lvl=.32*vel;
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(lvl,t+.14);
-  g.gain.setValueAtTime(lvl,t+dur);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.3);
-  const o1=AC.createOscillator();o1.type="sine";o1.frequency.value=f;
-  const vib=AC.createOscillator();vib.frequency.value=4.2;
-  const vibG=AC.createGain();vibG.gain.value=f*.012;   // 更寬的顫音＝氣息感
-  vib.connect(vibG);vibG.connect(o1.frequency);
-  /* 氣噪 */
-  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
-  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f*2;bp.Q.value=8;
-  const gn=AC.createGain();gn.gain.value=.06*vel;
-  src.connect(bp);bp.connect(gn);gn.connect(g);
-  o1.connect(g);
-  o1.start(t);vib.start(t);src.start(t);
-  const end=t+dur+.4;o1.stop(end);vib.stop(end);src.stop(end);
-}
-/* 夜霧：暗墊音——低八度、更暗的濾波、緩慢的波動 */
-function vDarkPad(midi,t,vel=1,dur=.6,pan){
-  const f=midiToFreq(midi-12);
-  const g=mkOut(pan);
-  const lvl=.3*vel;
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(lvl,t+.2);
-  g.gain.setValueAtTime(lvl,t+dur);
-  g.gain.exponentialRampToValueAtTime(.0001,t+dur+.9);
-  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=f*2.2;
-  lp.connect(g);
-  const o1=AC.createOscillator();o1.type="triangle";o1.frequency.value=f;
-  const o2=AC.createOscillator();o2.type="triangle";o2.frequency.value=f*1.005;
-  const g2=AC.createGain();g2.gain.value=.4;
-  const lfo=AC.createOscillator();lfo.frequency.value=2.1;
-  const lfoG=AC.createGain();lfoG.gain.value=lvl*.18;
-  lfo.connect(lfoG);lfoG.connect(g.gain);
-  o1.connect(lp);o2.connect(g2);g2.connect(lp);
-  o1.start(t);o2.start(t);lfo.start(t);
-  const end=t+dur+1;o1.stop(end);o2.stop(end);lfo.stop(end);
-}
-
-function playVoice(voice,midi,time,vel=1,susSec=0,pan){
-  if(!AC)return;
-  const t=time??AC.currentTime;
-  if(state.shadow){
-    switch(voice){
-      case "bell":    vDarkBell(midi,t,vel,susSec>0?Math.max(2.6,susSec+1):2.6,pan);return;
-      case "marimba": vDarkMarimba(midi,t,vel,susSec>0?.5+Math.min(1,susSec*.5):.4,pan);return;
-      case "pluck":   vDarkPluck(midi,t,vel,susSec>0?Math.max(1.1,susSec+.4):1.1,pan);return;
-      case "flute":   vXun(midi,t,vel,Math.max(.35,susSec||.4),pan);return;
-      case "pad":     vDarkPad(midi,t,vel,Math.max(.5,susSec||.6),pan);return;
-    }
-  }
-  switch(voice){
-    case "bell":    vBell(midi,t,vel,susSec>0?Math.max(1.8,susSec+.9):1.8,pan);break;
-    case "marimba": vMarimba(midi,t,vel,susSec>0?.4+Math.min(.9,susSec*.5):.32,pan);break;
-    case "pluck":   vPluck(midi,t,vel,susSec>0?Math.max(.55,susSec+.3):.55,pan);break;
-    case "flute":   vFlute(midi,t,vel,Math.max(.3,susSec||.35),pan);break;
-    case "pad":     vPad(midi,t,vel,Math.max(.4,susSec||.5),pan);break;
-  }
-}
-function playVoiceShort(voice,midi,time,vel=1,pan){
-  if(!AC)return;
-  const t=time??AC.currentTime;
-  if(state.shadow){
-    switch(voice){
-      case "bell":    vDarkBell(midi,t,vel,.9,pan);return;
-      case "marimba": vDarkMarimba(midi,t,vel,.3,pan);return;
-      case "pluck":   vDarkPluck(midi,t,vel,.7,pan);return;
-      case "flute":   vXun(midi,t,vel,.18,pan);return;
-      case "pad":     vDarkPad(midi,t,vel,.25,pan);return;
-    }
-  }
-  switch(voice){
-    case "bell":    vBell(midi,t,vel,.6,pan);break;
-    case "marimba": vMarimba(midi,t,vel,.26,pan);break;
-    case "pluck":   vPluck(midi,t,vel,.55,pan);break;
-    case "flute":   vFlute(midi,t,vel,.16,pan);break;
-    case "pad":     vPad(midi,t,vel,.2,pan);break;
-  }
-}
-
-/* ═════════ 情境音（非音高的自然聲響） ═════════ */
-let noiseBuf=null;
-function getNoise(){
-  if(noiseBuf)return noiseBuf;
-  noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
-  const d=noiseBuf.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  return noiseBuf;
-}
-/* 風：由上往下快速直線——噪音由高頻掃向低頻的呼嘯 */
-function sWind(t,vel=1,dur=.8,pan,down=true){
-  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
-  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.Q.value=3.2;
-  const f0=down?2600:500,f1=down?320:2600;
-  bp.frequency.setValueAtTime(f0,t);
-  bp.frequency.exponentialRampToValueAtTime(f1,t+dur);
-  const g=mkOut(pan);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(.3*vel,t+dur*.25);
-  g.gain.linearRampToValueAtTime(0,t+dur);
-  src.connect(bp);bp.connect(g);
-  src.start(t);src.stop(t+dur+.05);
-}
-/* 水：水平慢速長抹——低頻潺潺的白噪音，帶起伏 */
-function sWater(t,vel=1,dur=1.2,pan){
-  const src=AC.createBufferSource();src.buffer=getNoise();src.loop=true;
-  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=700;lp.Q.value=.8;
-  const g=mkOut(pan);
-  const lvl=.22*vel;
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(lvl,t+.15);
-  g.gain.setValueAtTime(lvl,t+dur-.25);
-  g.gain.linearRampToValueAtTime(0,t+dur);
-  const lfo=AC.createOscillator();lfo.frequency.value=1.7;
-  const lfoG=AC.createGain();lfoG.gain.value=280;
-  lfo.connect(lfoG);lfoG.connect(lp.frequency);
-  src.connect(lp);lp.connect(g);
-  src.start(t);lfo.start(t);
-  src.stop(t+dur+.05);lfo.stop(t+dur+.05);
-}
-
-/* ═════════ sequencer（含集體創作聲音護欄） ═════════ */
-let nextNoteTime=0,schedCol=0,timerId=null;
-const LOOKAHEAD_MS=25,SCHED_AHEAD=.12;
-const colDur=()=> (60/state.bpm)/2;
-
-/* 護欄：
-   1. 同一拍音很多時 → 音量按 1/√n 自動退讓，不會炸
-   2. 同一拍的音由低到高錯開 12ms（像撥豎琴），密集音群變成柔和的琶音感
-   3. 每個音加 ±6ms 人性化微差，去掉機械感
-   4. 力度壓縮在 .35~.9，永遠不會刺耳 */
-function fireColumn(col,when){
-  let evs=events[col]||[];
-  if(!evs.length)return;
-  const dur=colDur();
-  /* 同一拍太擠時：同列同音只留一個、上限 6 個音（保留最高與最低，中間均勻取樣），
-     避免幾十筆疊在同拍轟成一團 */
-  {
-    const seen=new Set();
-    evs=evs.filter(ev=>{
-      const k=ev.voice+":"+(ev.r??"a"+(ev.rows?ev.rows[0]:0));
-      if(seen.has(k))return false;
-      seen.add(k);return true;
-    });
-    if(evs.length>6){
-      evs.sort((a,b)=>((a.r??a.rows[0])-(b.r??b.rows[0])));
-      const picked=[evs[0]];
-      for(let i=1;i<5;i++)picked.push(evs[Math.round(i*(evs.length-1)/5)]);
-      picked.push(evs[evs.length-1]);
-      evs=[...new Set(picked)];
-    }
-  }
-  const crowd=1/Math.sqrt(evs.length);
-  const sorted=[...evs].sort((a,b)=>{
-    const ra=a.r??(a.rows?a.rows[0]:0),rb=b.r??(b.rows?b.rows[0]:0);
-    return ra-rb;
-  });
-  sorted.forEach((ev,idx)=>{
-    const t=when+idx*.012+(Math.random()-.5)*.012;
-    const vel=Math.min(.9,Math.max(.35,ev.vel*crowd));
-    /* 立體聲：畫面 x 位置 → 左右定位（收斂到 ±0.7，不會極端偏一側） */
-    const pan=(ev.x-.5)*1.4;
-    switch(ev.kind){
-      case "note":
-        /* 長音：一擊 + 依長度延長的自然餘響（乾淨直接，不輪奏） */
-        playVoice(ev.voice,state.rows[ev.r].midi,t,vel,ev.dur>1?dur*ev.dur:0,pan);
-        break;
-      case "pluck":
-        playVoiceShort(ev.voice,state.rows[ev.r].midi,t,vel,pan);
-        break;
-      case "trem":{
-        const n=4;
-        for(let i=0;i<n;i++)
-          playVoiceShort(ev.voice,state.rows[ev.r].midi,t+dur*i/n,vel*(i%2?.62:.9),pan);
-        break;
-      }
-      case "arp":{
-        const rows=ev.rows,n=rows.length;
-        for(let i=0;i<n;i++)
-          playVoiceShort(ev.voice,state.rows[rows[i]].midi,t+dur*i/Math.max(n,3)*.9,vel*.75,pan);
-        break;
-      }
-      case "wind":
-        sWind(t,vel,.5+ev.span*1.2,pan,ev.down);
-        break;
-      case "water":
-        sWater(t,vel,dur*ev.dur,pan);
-        break;
-    }
-  });
-}
-function scheduler(){
-  while(nextNoteTime<AC.currentTime+SCHED_AHEAD){
-    const col=schedCol,when=nextNoteTime;
-    fireColumn(col,when);
-    fireDrums(col,when);
-    const delay=Math.max(0,(when-AC.currentTime)*1000);
-    setTimeout(()=>{if(state.playing)paintPlayhead(col);},delay);
-    nextNoteTime+=colDur();
-    schedCol=(schedCol+1)%state.cols;
-  }
-}
-function startPlay(){
-  initAudio();initDrums();
-  if(AC.state==="suspended")AC.resume();
-  state.playing=true;
-  schedCol=0;nextNoteTime=AC.currentTime+.06;
-  timerId=setInterval(scheduler,LOOKAHEAD_MS);
-  playBtn.textContent="⏸";playBtn.classList.add("playing");
-  phline.classList.add("show");
-}
-function stopPlay(){
-  state.playing=false;
-  clearInterval(timerId);timerId=null;
-  playBtn.textContent="▶";playBtn.classList.remove("playing");
-  phline.classList.remove("show");
-}
-
-/* ═════════ DOM ═════════ */
-const gridwrap=document.getElementById("gridwrap");
-const labels=document.getElementById("labels");
-const playBtn=document.getElementById("playBtn");
-const phline=document.getElementById("phline");
-
-function buildLabels(){
-  rebuildRows();
-  const R=state.rows.length;
-  labels.style.gridTemplateRows=`repeat(${R},1fr)`;
-  labels.innerHTML="";
-  for(let vr=0;vr<R;vr++){
-    const r=R-1-vr,row=state.rows[r];
-    const lab=document.createElement("div");
-    lab.className="rowlabel"+(row.semi===0?" root":"");
-    lab.innerHTML=noteLabel(row)||"·";
-    labels.appendChild(lab);
-  }
-  labels.classList.toggle("hidden-labels",state.labelMode==="none");
-  phline.style.setProperty("--colw",(100/state.cols)+"%");
-  document.getElementById("scaleChip").innerHTML=
-    `<b>${KEYS[state.keyIndex].name}</b> ${SCALES[state.scaleIndex].name}`;
-  recomputeEvents();
-}
-function paintPlayhead(col){
-  if(col<0)return;
-  phline.style.left=(col*100/state.cols)+"%";
-  for(const ev of (events[col]||[])){
-    spawnPulse(ev.x,ev.y,pulseBase(ev.pal),
-      ev.kind==="arp"?1.8:(ev.kind==="wind"||ev.kind==="water")?2.4:1);
-    if(ev.trail)for(const p of ev.trail)spawnPulse(p.x,p.y,pulseBase(ev.pal),.6);
-    /* 筆畫「活起來」：被奏響的整條筆畫甦醒——墨色加濃、微微變寬再回落 */
-    if(ev.st)wakeStroke(ev.st);
-  }
-}
-
-/* ═════════ living strokes：被奏響的筆畫呼吸 ═════════ */
-const awake=new Map(); // stroke → t0
-let breathRunning=false;
-function wakeStroke(st){
-  awake.set(st,performance.now());
-  if(!breathRunning){breathRunning=true;requestAnimationFrame(breathLoop);}
-}
-function breathLoop(now){
-  let any=false;
-  for(const[st,t0]of awake){
-    if(now-t0>600)awake.delete(st);else any=true;
-  }
-  /* 呼吸中的筆畫以加濃加寬重繪一次（疊在原筆畫上，淡出） */
-  redrawStrokes();
-  for(const[st,t0]of awake){
-    const t=(now-t0)/600;
-    const breathe=Math.sin(Math.min(1,t)*Math.PI); // 0→1→0
-    sCtx.save();
-    sCtx.globalAlpha=breathe*(theme()==="night"?.55:.35);
-    drawStrokeScaled(sCtx,st,1+breathe*.35);
-    sCtx.restore();
-  }
-  if(any)requestAnimationFrame(breathLoop);
-  else{breathRunning=false;redrawStrokes();}
-}
-function drawStrokeScaled(ctx,st,widthMul){
-  if(st.type==="dot"){drawDot(ctx,st);return;}
-  const pts=st.pts;
-  if(pts.length<2)return;
-  ctx.save();setupInk(ctx);
-  for(let i=1;i<pts.length;i++){
-    const p0=pts[i-1],p1=pts[i];
-    const midY=(p0.y+p1.y)/2;
-    ctx.strokeStyle=inkColor(st.pal,midY);
-    if(theme()==="night"){
-      ctx.shadowColor=`hsl(${PALETTE[st.pal].hue} 90% 60% / .8)`;
-      ctx.shadowBlur=16;
-    }
-    ctx.lineCap="round";ctx.lineJoin="round";
-    ctx.lineWidth=widthOf((p0.s+p1.s)/2)*widthMul;
-    ctx.beginPath();
-    if(i>1){
-      const pm=pts[i-2];
-      ctx.moveTo((pm.x+p0.x)/2*W,(pm.y+p0.y)/2*H);
-      ctx.quadraticCurveTo(p0.x*W,p0.y*H,(p0.x+p1.x)/2*W,(p0.y+p1.y)/2*H);
-    }else ctx.moveTo(p0.x*W,p0.y*H);
-    ctx.lineTo(p1.x*W,p1.y*H);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-/* ═════════ canvases ═════════ */
-const sCan=document.getElementById("strokeCanvas");
-const fCan=document.getElementById("fxCanvas");
-const sCtx=sCan.getContext("2d");
-const fCtx=fCan.getContext("2d");
-let W=0,H=0,DPR=1;
-function resizeCanvases(){
-  const rect=gridwrap.getBoundingClientRect();
-  DPR=window.devicePixelRatio||1;
-  W=rect.width;H=rect.height;
-  for(const cv of [sCan,fCan]){cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);}
-  sCtx.setTransform(DPR,0,0,DPR,0,0);
-  fCtx.setTransform(DPR,0,0,DPR,0,0);
-  redrawStrokes();
-}
-new ResizeObserver(resizeCanvases).observe(gridwrap);
-
-const theme=()=>state.theme;
-const inkLike=()=>state.theme==="ink"||state.theme==="shanshui";
-function baseWidth(){
-  const R=state.rows.length||10;
-  return Math.max(6,Math.min(24,(H/R)*.38));
-}
-const widthOf=s=>baseWidth()*(.45+s*1.15);
-
-/* 顏色＝音色；水墨主題用淡彩，亮度隨音高微調 */
-function inkColor(pal,y){
-  const p=PALETTE[pal];
-  if(inkLike()){
-    const l=p.ink.l+(1-y)*8;
-    return `hsl(${p.ink.h} ${p.ink.s}% ${l}%)`;
-  }
-  if(theme()==="paper"){
-    const l=38+(1-y)*14;
-    return `hsl(${p.hue} 72% ${l}%)`;
-  }
-  const l=52+(1-y)*16;
-  return `hsl(${p.hue} 85% ${l}%)`;
-}
-function pulseBase(pal){
-  const p=PALETTE[pal];
-  if(inkLike())return `hsl(${p.ink.h} ${p.ink.s+10}% ${p.ink.l+8}%`;
-  if(theme()==="paper")return `hsl(${p.hue} 90% 45%`;
-  return `hsl(${p.hue} 90% 70%`;
-}
-function setupInk(ctx){
-  ctx.lineCap="round";ctx.lineJoin="round";
-  if(theme()==="night"){ctx.globalAlpha=.95;ctx.globalCompositeOperation="lighter";}
-  else{ctx.globalAlpha=.8;ctx.globalCompositeOperation="multiply";}
-}
-/* 穩定偽隨機：同座標永遠同值，重繪不閃爍 */
-function grain(x,y,k){
-  const v=Math.sin(x*127.1+y*311.7+k*74.7)*43758.5453;
-  return v-Math.floor(v);
-}
-/* 水墨筆觸：底層一道寬而極淡的「暈染」，上層依速度濃淡的「筆鋒」——快筆飛白、慢筆濕潤 */
-function drawSeg(ctx,pal,p0,p1,pm){
-  const midY=(p0.y+p1.y)/2;
-  const col=inkColor(pal,midY);
-  const w=widthOf((p0.s+p1.s)/2);
-  const path=()=>{
-    ctx.beginPath();
-    if(pm){
-      ctx.moveTo((pm.x+p0.x)/2*W,(pm.y+p0.y)/2*H);
-      ctx.quadraticCurveTo(p0.x*W,p0.y*H,(p0.x+p1.x)/2*W,(p0.y+p1.y)/2*H);
-    }else ctx.moveTo(p0.x*W,p0.y*H);
-    ctx.lineTo(p1.x*W,p1.y*H);
-    ctx.stroke();
-  };
-  /* 鉛筆質地：多道細碳線錯落＋石墨顆粒，快筆更鬆、慢筆更實 */
-  if(PALETTE[pal].tex==="pencil"){
-    const s=(p0.s+p1.s)/2;
-    const dx=p1.x-p0.x,dy=p1.y-p0.y;
-    const len=Math.hypot(dx*W,dy*H)||1;
-    const nx=-(dy*H)/len,ny=(dx*W)/len; /* 垂直方向單位向量 */
-    ctx.shadowBlur=0;
-    ctx.strokeStyle=col;
-    ctx.lineCap="round";
-    /* 3 道細碳線：各自沿垂直方向偏一點，像鉛筆芯的複線 */
-    for(let k=0;k<3;k++){
-      const j0=(grain(p0.x,p0.y,k)-.5)*w*.9;
-      const j1=(grain(p1.x,p1.y,k)-.5)*w*.9;
-      ctx.globalAlpha=(k===0?.5:.22)*Math.max(.4,1-s*.35);
-      ctx.lineWidth=Math.max(1,w*(k===0?.32:.2));
-      ctx.beginPath();
-      ctx.moveTo(p0.x*W+nx*j0,p0.y*H+ny*j0);
-      ctx.lineTo(p1.x*W+nx*j1,p1.y*H+ny*j1);
-      ctx.stroke();
-    }
-    /* 石墨顆粒：沿線大量撒碳粉——近線密、離線疏 */
-    const n=Math.min(26,Math.max(8,Math.round(len/2.2)));
-    ctx.fillStyle=col;
-    for(let k=0;k<n;k++){
-      const t=grain(p0.x+k,p1.y,7+k);
-      /* 偏移取兩次隨機的乘積：多數落在線附近，少數飛遠成散粉 */
-      const sp=(grain(p1.x+k,p0.y,13+k)-.5)*2;
-      const off=sp*Math.abs(sp)*w*1.9;
-      const gx=(p0.x+dx*t)*W+nx*off;
-      const gy=(p0.y+dy*t)*H+ny*off;
-      const r=.4+grain(gx,gy,3)*1.3;
-      /* 離線越遠越淡 */
-      ctx.globalAlpha=.42*(1-Math.min(1,Math.abs(off)/(w*1.9)))+.08;
-      ctx.fillRect(gx,gy,r,r);
-    }
-    ctx.globalAlpha=.8;
-    return;
-  }
-  if(inkLike()){
-    const s=(p0.s+p1.s)/2;
-    /* 暈染層 */
-    ctx.globalAlpha=.07;
-    ctx.strokeStyle=col;ctx.lineWidth=w*2.3;ctx.shadowBlur=0;
-    path();
-    /* 筆鋒層：慢筆濃（濕墨）、快筆淡（飛白） */
-    ctx.globalAlpha=Math.max(.28,.85-s*.5);
-    ctx.lineWidth=w;
-    path();
-    ctx.globalAlpha=.8;
-    return;
-  }
-  ctx.strokeStyle=col;
-  if(theme()==="night"){
-    ctx.shadowColor=`hsl(${PALETTE[pal].hue} 90% 60% / .8)`;
-    ctx.shadowBlur=12;
-  }
-  ctx.lineWidth=w;
-  path();
-}
-function drawDot(ctx,st){
-  const p=st.pts[0];
-  const rad=baseWidth()*1.05;
-  const col=inkColor(st.pal,p.y).slice(0,-1);
-  ctx.save();
-  if(theme()==="night")ctx.globalCompositeOperation="lighter";
-  else{ctx.globalCompositeOperation="multiply";ctx.globalAlpha=.85;}
-  /* 鉛筆點：小圈塗擦的碳點 */
-  if(PALETTE[st.pal].tex==="pencil"){
-    const cx=p.x*W,cy=p.y*H,R2=rad*.55;
-    ctx.strokeStyle=col+"/.55)";
-    ctx.lineWidth=Math.max(1,rad*.16);
-    ctx.lineCap="round";
-    ctx.beginPath();
-    for(let a=0;a<Math.PI*5;a+=.5){
-      const rr=R2*(.3+a/(Math.PI*5)*.7)*(0.82+grain(cx+a,cy,2)*.36);
-      const x=cx+Math.cos(a*1.7)*rr,y=cy+Math.sin(a*1.7)*rr*.85;
-      a===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-    for(let k=0;k<16;k++){
-      const sp=(grain(cx,cy,k)-.5)*2, sq=(grain(cy,cx,k+9)-.5)*2;
-      const gx=cx+sp*Math.abs(sp)*rad*1.9;
-      const gy=cy+sq*Math.abs(sq)*rad*1.9;
-      const d=Math.hypot(gx-cx,gy-cy)/(rad*1.9);
-      ctx.fillStyle=col+`/${(.42*(1-d)+.1).toFixed(2)})`;
-      ctx.fillRect(gx,gy,1,1+grain(gx,gy,1)*1.4);
-    }
-    ctx.restore();
-    return;
-  }
-  if(inkLike()){
-    /* 墨點：濃心 + 淡暈 */
-    const g1=ctx.createRadialGradient(p.x*W,p.y*H,0,p.x*W,p.y*H,rad*1.5);
-    g1.addColorStop(0,col+"/.9)");g1.addColorStop(.4,col+"/.5)");g1.addColorStop(1,col+"/0)");
-    ctx.fillStyle=g1;
-    ctx.beginPath();ctx.arc(p.x*W,p.y*H,rad*1.5,0,Math.PI*2);ctx.fill();
-  }else{
-    const grd=ctx.createRadialGradient(p.x*W,p.y*H,0,p.x*W,p.y*H,rad);
-    grd.addColorStop(0,col+")");grd.addColorStop(.55,col+"/.85)");grd.addColorStop(1,col+"/0)");
-    ctx.fillStyle=grd;
-    ctx.beginPath();ctx.arc(p.x*W,p.y*H,rad,0,Math.PI*2);ctx.fill();
-  }
-  ctx.restore();
-}
-function drawStroke(ctx,st){
-  if(st.type==="dot"){drawDot(ctx,st);return;}
-  const pts=st.pts;
-  if(pts.length<2)return;
-  ctx.save();setupInk(ctx);
-  for(let i=1;i<pts.length;i++)
-    drawSeg(ctx,st.pal,pts[i-1],pts[i],i>1?pts[i-2]:null);
-  ctx.restore();
-}
-function redrawStrokes(){
-  sCtx.clearRect(0,0,W,H);
-  for(const st of strokes)drawStroke(sCtx,st);
-}
-
-/* ═════════ gesture classification ═════════ */
-function classify(st){
-  const pts=st.pts;
-  if(pts.length<2)return "dot";
-  let len=0,minX=1,maxX=0,minY=1,maxY=0;
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i];
-    if(i)len+=Math.hypot(p.x-pts[i-1].x,p.y-pts[i-1].y);
-    minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
-    minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);
-  }
-  const dt=pts[pts.length-1].t-pts[0].t;
-  if(len<.02&&dt<300)return "dot";
-  const closeDist=Math.hypot(pts[0].x-pts[pts.length-1].x,pts[0].y-pts[pts.length-1].y);
-  const bw=maxX-minX,bh=maxY-minY;
-  /* 風：快速的豎直筆——高瘦 + 畫得快 */
-  if(bh>.16&&bw<bh*.5&&dt<650)return "wind";
-  if(len>.18&&closeDist<Math.max(.06,len*.22)&&bw>.05&&bh>.07)return "circle";
-  /* 左右來回塗抹＝水；上下抖動＝顫音 */
-  let yflips=0,ydir=0,xflips=0,xdir=0;
-  for(let i=1;i<pts.length;i++){
-    const dy=pts[i].y-pts[i-1].y,dx=pts[i].x-pts[i-1].x;
-    if(Math.abs(dy)>=.008){
-      const d=dy>0?1:-1;
-      if(ydir!==0&&d!==ydir)yflips++;
-      ydir=d;
-    }
-    if(Math.abs(dx)>=.006){
-      const d=dx>0?1:-1;
-      if(xdir!==0&&d!==xdir)xflips++;
-      xdir=d;
-    }
-  }
-  if(xflips>=4&&bw>.05&&bh<.12)return "water";
-  if(yflips>=4&&bh>.03)return "trem";
-  return "line";
-}
-
-/* ═════════ strokes → events ═════════ */
-function recomputeEvents(){
-  const C=state.cols;
-  events=Array.from({length:C},()=>[]);
-  for(const st of strokes){
-    const pts=st.pts;
-    const voice=PALETTE[st.pal].id,pal=st.pal;
-    if(st.type==="dot"){
-      const p=pts[0],c=colOf(p.x),r=rowFromY(p.y);
-      events[c].push({kind:"pluck",voice,pal,st,r,vel:.85,x:p.x,y:p.y});
-      continue;
-    }
-    const colData=new Map();
-    for(let i=1;i<pts.length;i++){
-      const p0=pts[i-1],p1=pts[i];
-      const steps=Math.max(1,Math.ceil(Math.abs(p1.x-p0.x)*C*3+Math.abs(p1.y-p0.y)*state.rows.length*2));
-      for(let s2=0;s2<=steps;s2++){
-        const t=s2/steps;
-        const x=p0.x+(p1.x-p0.x)*t,y=p0.y+(p1.y-p0.y)*t;
-        const sp=p0.s+(p1.s-p0.s)*t;
-        const c=colOf(x);
-        if(!colData.has(c))colData.set(c,{ys:[],sps:[],x,y});
-        const d=colData.get(c);
-        d.ys.push(y);d.sps.push(sp);
-      }
-    }
-    /* 力度壓縮：.4~.8，任何人畫都不會爆 */
-    const velOf=sps=>{
-      const m=sps.reduce((a,b)=>a+b,0)/sps.length;
-      return .4+.4*m;
-    };
-    if(st.type==="wind"){
-      /* 風聲：整筆一個事件，方向由起終點決定 */
-      const p0=pts[0],p1=pts[pts.length-1];
-      const cx=(p0.x+p1.x)/2;
-      events[colOf(cx)].push({kind:"wind",voice,pal,st,down:p1.y>p0.y,
-        vel:.8,x:cx,y:(p0.y+p1.y)/2,span:Math.abs(p1.y-p0.y)});
-      continue;
-    }
-    if(st.type==="water"){
-      /* 水聲：從最左格開始，長度=塗抹的寬度 */
-      let minX2=1,maxX2=0,sumY=0,n2=0;
-      for(const[,d]of colData){
-        minX2=Math.min(minX2,d.x);maxX2=Math.max(maxX2,d.x);
-        sumY+=d.y;n2++;
-      }
-      const cs=colOf(minX2),ce=colOf(maxX2);
-      events[cs].push({kind:"water",voice,pal,st,dur:Math.max(2,ce-cs+1),
-        vel:.75,x:(minX2+maxX2)/2,y:sumY/n2});
-      continue;
-    }
-    if(st.type==="circle"){
-      let minY=1,maxY=0,sumX=0,n=0,allS=[];
-      for(const[,d]of colData){
-        for(const y of d.ys){minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
-        sumX+=d.x;n++;allS.push(...d.sps);
-      }
-      const rLo=rowFromY(maxY),rHi=rowFromY(minY);
-      const rows=[];for(let r=rLo;r<=rHi;r++)rows.push(r);
-      const cx=sumX/n,cy=(minY+maxY)/2;
-      events[colOf(cx)].push({kind:"arp",voice,pal,st,rows,vel:velOf(allS),x:cx,y:cy});
-      continue;
-    }
-    if(st.type==="trem"){
-      for(const[c,d]of colData){
-        const my=d.ys.reduce((a,b)=>a+b,0)/d.ys.length;
-        events[c].push({kind:"trem",voice,pal,st,r:rowFromY(my),vel:velOf(d.sps),x:d.x,y:my});
-      }
-      continue;
-    }
-    const colArr=[];
-    for(const[c,d]of colData){
-      const ys=[...d.ys].sort((a,b)=>a-b);
-      const my=ys[Math.floor(ys.length/2)];
-      colArr.push({c,r:rowFromY(my),vel:velOf(d.sps),x:d.x,y:my});
-    }
-    colArr.sort((a,b)=>a.c-b.c);
-    /* 黏滯判定：手在音高帶邊界的微抖不換音，
-       要明顯越出上一個音的帶（超過帶高的 50%）才算真的換音 */
-    {
-      const R=state.rows.length,band=1/R,tol=band*.5;
-      for(let k=1;k<colArr.length;k++){
-        const prev=colArr[k-1],cur=colArr[k];
-        if(cur.c===prev.c+1&&cur.r!==prev.r){
-          const vr=R-1-prev.r;           // 上一個音的視覺帶
-          const yTop=vr*band,yBot=(vr+1)*band;
-          if(cur.y>yTop-tol&&cur.y<yBot+tol)cur.r=prev.r;
-        }
-      }
-    }
-    let i=0;
-    while(i<colArr.length){
-      let j=i;
-      const trail=[];
-      while(j+1<colArr.length&&colArr[j+1].c===colArr[j].c+1&&colArr[j+1].r===colArr[i].r){
-        j++;trail.push({x:colArr[j].x,y:colArr[j].y});
-      }
-      const e=colArr[i];
-      events[e.c].push({kind:"note",voice,pal,st,r:e.r,vel:e.vel,dur:j-i+1,x:e.x,y:e.y,trail});
-      i=j+1;
-    }
-  }
-}
-
-/* ═════════ fx pulses ═════════ */
-let pulses=[],fxRunning=false;
-function spawnPulse(x,y,base,scale=1){
-  pulses.push({x,y,base,scale,t0:performance.now()});
-  if(!fxRunning){fxRunning=true;requestAnimationFrame(fxLoop);}
-}
-function fxLoop(now){
-  fCtx.clearRect(0,0,W,H);
-  pulses=pulses.filter(p=>now-p.t0<450);
-  const aMax=theme()==="night"?.6:.3;
-  for(const p of pulses){
-    const t=(now-p.t0)/450;
-    const rad=baseWidth()*(0.9+t*2.4)*p.scale;
-    const a=(1-t)*aMax;
-    fCtx.beginPath();
-    fCtx.arc(p.x*W,p.y*H,rad,0,Math.PI*2);
-    fCtx.fillStyle=`${p.base} / ${a})`;
-    fCtx.fill();
-  }
-  if(pulses.length)requestAnimationFrame(fxLoop);
-  else{fxRunning=false;fCtx.clearRect(0,0,W,H);}
-}
-
-/* ═════════ pointer input ═════════ */
-const active=new Map();
-function normPoint(e){
-  const rect=gridwrap.getBoundingClientRect();
-  return{
-    x:Math.min(1,Math.max(0,(e.clientX-rect.left)/rect.width)),
-    y:Math.min(1,Math.max(0,(e.clientY-rect.top)/rect.height)),
-  };
-}
-gridwrap.addEventListener("pointerdown",e=>{
-  initAudio();if(AC.state==="suspended")AC.resume();
-  const p=normPoint(e);
-  const st={type:"line",pal:state.pal,pts:[{...p,t:performance.now(),s:.3}],lastR:rowFromY(p.y)};
-  active.set(e.pointerId,st);
-  strokes.push(st);
-});
-gridwrap.addEventListener("pointermove",e=>{
-  const st=active.get(e.pointerId);
-  if(!st)return;
-  const p=normPoint(e);
-  const last=st.pts[st.pts.length-1];
-  const now=performance.now();
-  const dist=Math.hypot((p.x-last.x)*W,(p.y-last.y)*H);
-  if(dist<3)return;
-  const dt=Math.max(1,now-last.t);
-  const v=(dist/W)/(dt/1000);
-  const sRaw=Math.min(1,v/1.6);
-  const s=last.s*.65+sRaw*.35;
-  st.pts.push({...p,t:now,s});
-  sCtx.save();setupInk(sCtx);
-  const n=st.pts.length;
-  drawSeg(sCtx,st.pal,st.pts[n-2],st.pts[n-1],n>2?st.pts[n-3]:null);
-  sCtx.restore();
-  const r=rowFromY(p.y);
-  if(r!==st.lastR){
-    st.lastR=r;
-    if(!state.playing)playVoiceShort(PALETTE[st.pal].id,state.rows[r].midi,null,.15);
-  }
-});
-function endPointer(e){
-  const st=active.get(e.pointerId);
-  if(!st)return;
-  active.delete(e.pointerId);
-  st.type=classify(st);
-  if(st.type==="dot")st.pts=[st.pts[0]];
-  redrawStrokes();
-  recomputeEvents();
-  if(!state.playing){
-    const p=st.pts[0],voice=PALETTE[st.pal].id;
-    if(st.type==="dot")playVoiceShort(voice,state.rows[rowFromY(p.y)].midi,null,.5);
-    else if(st.type==="wind"){
-      const pEnd=st.pts[st.pts.length-1];
-      sWind(AC.currentTime+.02,.7,.6,(p.x-.5)*1.4,pEnd.y>p.y);
-    }
-    else if(st.type==="water")sWater(AC.currentTime+.02,.6,1,(p.x-.5)*1.4);
-    else if(st.type==="circle"){
-      for(const col of events)for(const ev of col)
-        if(ev.kind==="arp"&&ev.voice===voice&&Math.abs(ev.x-p.x)<.3){
-          ev.rows.forEach((r,i)=>playVoiceShort(voice,state.rows[r].midi,AC.currentTime+i*.09,.4));
-          return;
-        }
-    }
-  }
-}
-gridwrap.addEventListener("pointerup",endPointer);
-gridwrap.addEventListener("pointercancel",endPointer);
-gridwrap.addEventListener("pointerleave",endPointer);
-
-/* ═════════ palette UI ═════════ */
-const palSeg=document.getElementById("palSeg");
-function swatchStyle(p){
-  /* 影子模式：色球整體壓暗，像上了一層墨 */
-  const dk=state.shadow?14:0;
-  if(inkLike()){
-    return{
-      sw:`radial-gradient(circle at 35% 30%, hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l+22-dk}%), hsl(${p.ink.h} ${p.ink.s}% ${p.ink.l-dk}%) 60%, hsl(${p.ink.h} ${p.ink.s}% ${Math.max(6,p.ink.l-14-dk)}%))`,
-      swg:`hsl(${p.ink.h} ${p.ink.s}% ${Math.max(8,p.ink.l-dk)}% / .5)`,
-    };
-  }
-  return{
-    sw:`radial-gradient(circle at 35% 30%, hsl(${p.hue} ${90-dk*2}% ${72-dk}%), hsl(${p.hue} ${85-dk*2}% ${55-dk}%) 60%, hsl(${p.hue} 80% ${42-dk}%))`,
-    swg:`hsl(${p.hue} 90% ${60-dk}% / .6)`,
-  };
-}
-function updatePaletteNames(){
-  [...palSeg.children].forEach((b,i)=>{
-    b.querySelector(".nm").textContent=state.shadow?PALETTE[i].sname:PALETTE[i].name;
-  });
-  updateSwatches();
-}
-function updateSwatches(){
-  [...palSeg.children].forEach((b,i)=>{
-    const s=swatchStyle(PALETTE[i]);
-    b.style.setProperty("--sw",s.sw);
-    b.style.setProperty("--swg",s.swg);
-  });
-}
-PALETTE.forEach((p,i)=>{
-  const b=document.createElement("button");
-  b.className="swatch"+(i===state.pal?" sel":"");
-  b.innerHTML=`<span class="dot"></span><span class="nm">${p.name}</span>`;
-  b.addEventListener("click",()=>{
-    state.pal=i;
-    for(const x of palSeg.children)x.classList.toggle("sel",x===b);
-    initAudio();if(AC.state==="suspended")AC.resume();
-    playVoiceShort(p.id,72,null,.5);
-  });
-  palSeg.appendChild(b);
-});
-updateSwatches();
-
-/* ═════════ controls ═════════ */
-playBtn.addEventListener("click",()=>state.playing?stopPlay():startPlay());
-document.getElementById("undoBtn").addEventListener("click",()=>{
-  strokes.pop();redrawStrokes();recomputeEvents();
-});
-document.getElementById("clearBtn").addEventListener("click",()=>{
-  strokes=[];redrawStrokes();recomputeEvents();
-});
-const bpmSlider=document.getElementById("bpmSlider");
-bpmSlider.addEventListener("input",()=>{
-  state.bpm=+bpmSlider.value;
-  document.getElementById("bpmVal").innerHTML=state.bpm+"<small>BPM</small>";
-});
-const keySel=document.getElementById("keySel");
-KEYS.forEach((k,i)=>{const o=document.createElement("option");o.value=i;o.textContent=k.name;keySel.appendChild(o);});
-keySel.addEventListener("change",()=>{state.keyIndex=+keySel.value;buildLabels();});
-const scaleSel=document.getElementById("scaleSel");
-SCALES.forEach((s,i)=>{const o=document.createElement("option");o.value=i;o.textContent=s.name;scaleSel.appendChild(o);});
-scaleSel.addEventListener("change",()=>{state.scaleIndex=+scaleSel.value;buildLabels();redrawStrokes();});
-document.getElementById("octSel").addEventListener("change",e=>{
-  state.octaves=+e.target.value;buildLabels();redrawStrokes();
-});
-document.getElementById("labelSeg").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b)return;
-  state.labelMode=b.dataset.mode;
-  for(const x of e.currentTarget.children)x.classList.toggle("sel",x===b);
-  buildLabels();
-});
-document.getElementById("colSeg").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b)return;
-  state.cols=+b.dataset.cols;
-  for(const x of e.currentTarget.children)x.classList.toggle("sel",x===b);
-  if(state.playing){stopPlay();buildLabels();startPlay();}else buildLabels();
-});
-/* 主題循環：水墨 → 山水 → 夜幕 → 紙頁 */
-const THEMES=[
-  {id:"ink",label:"水墨",cls:"ink"},
-  {id:"shanshui",label:"山水",cls:"shanshui"},
-  {id:"night",label:"夜幕",cls:""},
-  {id:"paper",label:"紙頁",cls:"paper"},
-];
-const themeBtn=document.getElementById("themeBtn");
-themeBtn.addEventListener("click",()=>{
-  const idx=(THEMES.findIndex(t=>t.id===state.theme)+1)%THEMES.length;
-  const t=THEMES[idx];
-  state.theme=t.id;
-  document.body.className=t.cls;
-  themeBtn.textContent=t.label;
-  updateSwatches();
-  redrawStrokes();
-});
-document.getElementById("fsBtn").addEventListener("click",()=>{
-  if(document.fullscreenElement)document.exitFullscreen();
-  else document.documentElement.requestFullscreen?.();
-});
-/* ═════════ 影片輸出（畫面＋聲音） ═════════ */
-const recBtn=document.getElementById("recBtn");
-const titleInput=document.getElementById("titleInput");
-let recorder=null,recChunks=[],recStream=null,recRAF=0,recCanvas=null,recCtx=null,audioDest=null;
-
-function themeBg(){
-  if(theme()==="shanshui")return["#f3efe2","#eae4d2"];
-  if(inkLike())return["#f6f2e6","#ede7d7"];
-  if(theme()==="paper")return["#faf6ee","#f1ebdf"];
-  return["#0b1020","#131a38"];
-}
-function drawRecFrame(){
-  const c=recCtx,cw=recCanvas.width,ch=recCanvas.height;
-  /* 背景 */
-  const[b1,b2]=themeBg();
-  const g=c.createLinearGradient(0,0,0,ch);
-  g.addColorStop(0,b1);g.addColorStop(1,b2);
-  c.fillStyle=g;c.fillRect(0,0,cw,ch);
-  /* 內容區域（含邊距） */
-  const pad=Math.round(cw*.04),topPad=Math.round(ch*.14);
-  const aw=cw-pad*2,ah=ch-topPad-pad;
-  /* 山水底圖 */
-  if(theme()==="shanshui"&&heroImg.complete&&heroImg.naturalWidth){
-    c.save();c.globalAlpha=.42;
-    const ir=heroImg.naturalWidth/heroImg.naturalHeight,ar=aw/ah;
-    let dw,dh;
-    if(ir>ar){dh=ah;dw=dh*ir;}else{dw=aw;dh=dw/ir;}
-    c.drawImage(heroImg,pad+(aw-dw)/2,topPad+(ah-dh)/2,dw,dh);
-    c.restore();
-  }
-  /* 播放掃描光 */
-  if(state.playing&&phline.classList.contains("show")){
-    const colW=aw/state.cols;
-    const x=pad+parseFloat(phline.style.left||"0")/100*aw;
-    const pg=c.createLinearGradient(x,0,x+colW,0);
-    const phc=theme()==="night"?"255,255,255":"120,100,70";
-    pg.addColorStop(0,`rgba(${phc},0)`);
-    pg.addColorStop(.5,`rgba(${phc},.09)`);
-    pg.addColorStop(1,`rgba(${phc},0)`);
-    c.fillStyle=pg;c.fillRect(x,topPad,colW,ah);
-  }
-  /* 筆畫與光效 */
-  c.drawImage(sCan,pad,topPad,aw,ah);
-  c.drawImage(fCan,pad,topPad,aw,ah);
-  /* 紙紋（水墨/紙頁主題） */
-  if(theme()!=="night"&&grainImg.complete){
-    c.save();
-    c.globalCompositeOperation="multiply";
-    c.globalAlpha=.6;
-    const ts=256;
-    for(let ty=0;ty<ch;ty+=ts)for(let tx=0;tx<cw;tx+=ts)
-      c.drawImage(grainImg,tx,ty,ts,ts);
-    c.restore();
-  }
-  /* 標題 */
-  const title=titleInput.value.trim()||"音畫布";
-  c.fillStyle=theme()==="night"?"#e8ecf8":"#3a3630";
-  c.font=`600 ${Math.round(ch*.055)}px "PingFang TC","Noto Sans TC",sans-serif`;
-  c.textAlign="center";c.textBaseline="middle";
-  c.fillText(title,cw/2,topPad*.48);
-  /* 副標：調性資訊 */
-  c.fillStyle=theme()==="night"?"rgba(232,236,248,.45)":"rgba(58,54,48,.45)";
-  c.font=`500 ${Math.round(ch*.026)}px "PingFang TC","Noto Sans TC",sans-serif`;
-  c.fillText(`${KEYS[state.keyIndex].name} ${SCALES[state.scaleIndex].name} · ${state.bpm} BPM`,cw/2,topPad*.82);
-  recRAF=requestAnimationFrame(drawRecFrame);
-}
-function safeFilename(s){
-  return (s||"音畫布").replace(/[\\/:*?"<>|]/g,"").slice(0,24)||"音畫布";
-}
-function startRec(){
-  initAudio();if(AC.state==="suspended")AC.resume();
-  /* 聲音：master 分一路進錄音目的地 */
-  if(!audioDest){
-    audioDest=AC.createMediaStreamDestination();
-    master.connect(audioDest);
-  }
-  /* 畫面：合成到 1280×720 的輸出畫布 */
-  recCanvas=document.createElement("canvas");
-  recCanvas.width=1280;recCanvas.height=720;
-  recCtx=recCanvas.getContext("2d");
-  drawRecFrame();
-  const vStream=recCanvas.captureStream(30);
-  recStream=new MediaStream([...vStream.getVideoTracks(),...audioDest.stream.getAudioTracks()]);
-  const mime=[
-    "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
-    "video/mp4;codecs=avc1",
-    "video/mp4",
-    "video/webm;codecs=vp9,opus",
-    "video/webm",
-  ].find(m=>MediaRecorder.isTypeSupported(m))||"";
-  recorder=new MediaRecorder(recStream,mime?{mimeType:mime}:undefined);
-  recChunks=[];
-  const actualMime=recorder.mimeType||mime||"video/webm";
-  recorder.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data);};
-  recorder.onstop=()=>{
-    cancelAnimationFrame(recRAF);
-    const ext=actualMime.includes("mp4")?"mp4":"webm";
-    const blob=new Blob(recChunks,{type:actualMime});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;a.download=safeFilename(titleInput.value)+"."+ext;
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),10000);
-  };
-  recorder.start(250);
-  /* 沒在播就自動開始播，錄下的就是循環演奏 */
-  if(!state.playing)startPlay();
-  recBtn.textContent="⏹";recBtn.classList.add("rec");
-}
-function stopRec(){
-  track("video_export");
-  if(recorder&&recorder.state!=="inactive")recorder.stop();
-  recorder=null;
-  recBtn.textContent="⏺";recBtn.classList.remove("rec");
-}
-recBtn.addEventListener("click",()=>{
-  if(recorder)stopRec();else startRec();
-});
-/* 作品名稱輸入時不要觸發畫布 */
-titleInput.addEventListener("pointerdown",e=>e.stopPropagation());
-
-/* ═════════ 彈出面板：設定 ⚙ 與筆法說明 ？ ═════════ */
-const settingsPanel=document.getElementById("settingsPanel");
-const legendEl=document.getElementById("legend");
-const scrim=document.getElementById("scrim");
-function closePopups(){
-  settingsPanel.classList.remove("show");
-  legendEl.classList.remove("show");
-  document.getElementById("drumPanel").classList.remove("show");
-  const dm=document.getElementById("diceModal");
-  /* 骰子未擲完不允許被其他操作關掉 */
-  if(dm.classList.contains("show")&&typeof hasRolled!=="undefined"&&!hasRolled){
-    scrim.classList.add("show");
-    return;
-  }
-  dm.classList.remove("show");
-  scrim.classList.remove("show");
-}
-function togglePopup(el){
-  const wasOpen=el.classList.contains("show");
-  closePopups();
-  if(!wasOpen){el.classList.add("show");scrim.classList.add("show");}
-}
-document.getElementById("gearBtn").addEventListener("click",()=>togglePopup(settingsPanel));
-document.getElementById("helpBtn").addEventListener("click",()=>togglePopup(legendEl));
-scrim.addEventListener("pointerdown",()=>{
-  /* 骰子視窗開著且還沒擲 → 必須擲完才能離開（搖一下提醒） */
-  const dm=document.getElementById("diceModal");
-  if(dm.classList.contains("show")&&!hasRolled){
-    dm.style.animation="dicenudge .3s ease";
-    setTimeout(()=>dm.style.animation="",320);
-    return;
-  }
-  closePopups();
-});
-
-/* ═════════ 鼓機 UI ═════════ */
-const drumPanel=document.getElementById("drumPanel");
-const drumBtn=document.getElementById("drumBtn");
-const drumSeg=document.getElementById("drumSeg");
-drumBtn.addEventListener("click",()=>togglePopup(drumPanel));
-DRUM_PATTERNS.forEach((p,i)=>{
-  const b=document.createElement("button");
-  b.textContent=p.name;
-  if(i===0)b.classList.add("sel");
-  b.addEventListener("click",()=>{
-    drumPattern=i;
-    if(i!==0)track("drum_on");
-    for(const x of drumSeg.children)x.classList.toggle("sel",x===b);
-    drumBtn.classList.toggle("active",i!==0);
-    initAudio();initDrums();
-    if(AC.state==="suspended")AC.resume();
-    /* 未播放時給 2 拍試聽 */
-    if(!state.playing&&p.steps){
-      const t0=AC.currentTime+.05,d=colDur();
-      for(let c=0;c<4;c++){
-        const s=p.steps[c],half=d/2;
-        for(let k=0;k<s.length;k++){
-          const t=t0+c*d+(k>=2?half:0);
-          switch(s[k]){
-            case "K":dKick(t);break;case "S":dSnare(t);break;
-            case "H":dHat(t);break;case "O":dHat(t,1,true);break;
-            case "T":dTom(t);break;case "C":dClick(t);break;
-          }
-        }
-      }
-    }
-  });
-  drumSeg.appendChild(b);
-});
-document.getElementById("drumVol").addEventListener("input",e=>{
-  initAudio();initDrums();
-  drumGain.gain.value=e.target.value/100;
-});
-
-/* ═════════ 骰子：擲出氛圍 ═════════
-   每個氛圍一次改變：調、音階、八度、BPM、鼓組、空間感（delay 深度）。
-   同一張畫，擲一次骰子就是另一首曲子。 */
-const MOODS=[
-  {name:"晨霧", desc:"G 大調五聲・緩・明音色",
-   key:7, scale:0, oct:2, bpm:66,  drum:1, space:.16, shadow:false},
-  {name:"夜雨", desc:"A 小調五聲・靜・影音色",
-   key:9, scale:1, oct:1, bpm:80,  drum:4, space:.11, shadow:true},
-  {name:"市集", desc:"C 藍調・快・明音色",
-   key:0, scale:5, oct:2, bpm:132, drum:5, space:.04, shadow:false},
-  {name:"古道", desc:"D 小調五聲・低吟・影音色",
-   key:2, scale:1, oct:3, bpm:96,  drum:3, space:.08, shadow:true},
-  {name:"溪流", desc:"F 大調・流動・明音色",
-   key:5, scale:2, oct:2, bpm:112, drum:2, space:.07, shadow:false},
-  {name:"雪原", desc:"E♭ 大調五聲・空遠・影音色",
-   key:3, scale:0, oct:4, bpm:56,  drum:0, space:.2,  shadow:true},
-  {name:"竹林", desc:"E 小調五聲・搖曳・影音色",
-   key:4, scale:1, oct:3, bpm:100, drum:2, space:.1,  shadow:true},
-  {name:"廟會", desc:"A 大調五聲・熱鬧・明音色",
-   key:9, scale:0, oct:1, bpm:124, drum:3, space:.05, shadow:false},
-];
-/* 骰面 ↔ 氛圍：六面對應 MOODS 的前六種（溪流、竹林保留給進階；
-   面朝向：f1 前 f2 右 f3 後 f4 左 f5 上 f6 下 */
-const FACE_MOOD=[0,1,2,3,5,7];   // 晨霧 夜雨 市集 古道 雪原 廟會
-const FACE_ROT=[                  // 讓該面轉到正前方的旋轉角
-  {x:0,y:0},{x:0,y:-90},{x:0,y:180},{x:0,y:90},{x:-90,y:0},{x:90,y:0},
-];
-let lastFace=-1,rolling=false,spinX=-18,spinY=32;
-const diceBtn=document.getElementById("diceBtn");
-const diceModal=document.getElementById("diceModal");
-const diceCube=document.getElementById("diceCube");
-const diceResult=document.getElementById("diceResult");
-const moodToast=document.getElementById("moodToast");
-let toastTimer=null;
-
-function applyMood(m){
-  state.keyIndex=m.key;keySel.value=m.key;
-  state.scaleIndex=m.scale;scaleSel.value=m.scale;
-  state.octaves=m.oct;document.getElementById("octSel").value=m.oct;
-  state.bpm=m.bpm;bpmSlider.value=m.bpm;
-  document.getElementById("bpmVal").innerHTML=m.bpm+"<small>BPM</small>";
-  /* 鼓機不自動開啟：骰子只建議 pattern，等使用者自己開鼓時才預選 */
-  if(drumPattern!==0){ /* 已開著鼓 → 換成該氛圍的建議 pattern */
-    drumPattern=m.drum;
-    [...drumSeg.children].forEach((x,k)=>x.classList.toggle("sel",k===m.drum));
-    drumBtn.classList.toggle("active",m.drum!==0);
-  }
-  delaySend.gain.value=m.space;
-  /* 影子音色組 */
-  state.shadow=!!m.shadow;
-  updatePaletteNames();
-  buildLabels();redrawStrokes();
-}
-let hasRolled=false;   // 本次開窗是否已擲過
-function openDice(){
-  hasRolled=false;
-  document.getElementById("diceGo").style.display="none";
-  document.getElementById("diceHint").textContent="點骰子，擲出今天的氛圍";
-  diceResult.classList.remove("show");
-  diceModal.classList.add("show");scrim.classList.add("show");
-}
-function closeDice(){
-  diceModal.classList.remove("show");
-  scrim.classList.remove("show");
-}
-function rollDice(){
-  if(rolling)return;
-  rolling=true;
-  initAudio();initDrums();
-  if(AC.state==="suspended")AC.resume();
-  diceResult.classList.remove("show");
-  /* 不重複擲到同一面 */
-  let f;do{f=Math.floor(Math.random()*6);}while(f===lastFace);
-  lastFace=f;
-  /* 3D 翻滾：多轉 2~3 整圈後停在目標面 */
-  const turnsX=(2+Math.floor(Math.random()*2))*360;
-  const turnsY=(2+Math.floor(Math.random()*2))*360;
-  spinX=FACE_ROT[f].x-18+turnsX;
-  spinY=FACE_ROT[f].y+32+turnsY;
-  diceCube.style.transform=`rotateX(${spinX}deg) rotateY(${spinY}deg)`;
-  /* 滾動聲：三聲輕微木頭碰撞 */
-  const t0=AC.currentTime;
-  dClick(t0+.05,.5);dClick(t0+.35,.4);dClick(t0+.7,.6);
-  setTimeout(()=>{
-    const m=MOODS[FACE_MOOD[f]];
-    applyMood(m);
-    diceResult.querySelector(".rname").textContent=m.name;
-    diceResult.querySelector(".rdesc").textContent=m.desc;
-    diceResult.classList.add("show");
-    /* 落定音：該氛圍的根音輕響 */
-    playVoiceShort("bell",60+m.key+12,null,.5);
-    track("dice_roll",m.name);
-    rolling=false;
-    /* 擲過才放行 */
-    hasRolled=true;
-    document.getElementById("diceGo").style.display="";
-    document.getElementById("diceHint").textContent="滿意就開始作畫，或再擲一次";
-  },1300);
-}
-document.getElementById("diceScene").addEventListener("click",rollDice);
-document.getElementById("diceGo").addEventListener("click",closeDice);
-diceBtn.addEventListener("click",()=>{
-  if(diceModal.classList.contains("show")){
-    if(!hasRolled){ /* 開著且沒擲 → 不給關 */
-      diceModal.style.animation="dicenudge .3s ease";
-      setTimeout(()=>diceModal.style.animation="",320);
-      return;
-    }
-    closeDice();
-  }else{closePopups();openDice();}
-});
-
-/* ═════════ 使用行為統計（Google Analytics 事件） ═════════ */
-function track(name,label){
-  if(typeof gtag==="function")
-    gtag("event",name,label?{mood:label}:{});
-}
-
-document.getElementById("startBtn").addEventListener("click",()=>{
-  initAudio();AC.resume();
-  track("start_drawing");
-  const t=AC.currentTime;
-  vBell(72,t+.05,.6);
-  vMarimba(76,t+.22,.6);
-  vFlute(79,t+.4,.5,.5);
-  vPad(84,t+.6,.5,.8);
-  document.getElementById("startOverlay").classList.add("gone");
-  /* 進入遊戲即彈出 3D 骰子視窗 */
-  setTimeout(openDice,650);
-});
-
-/* ═════════ 紙張紋理生成（宣紙：底色斑駁 + 顆粒 + 長纖維） ═════════ */
+/* 與畫布同款的宣紙紋理 */
 function makePaperTexture(){
   const S=512;
   const cv=document.createElement("canvas");cv.width=S;cv.height=S;
   const c=cv.getContext("2d");
   c.fillStyle="#fff";c.fillRect(0,0,S,S);
-  /* 1. 大塊斑駁（紙漿厚薄不均） */
   for(let i=0;i<90;i++){
     const x=Math.random()*S,y=Math.random()*S,r=20+Math.random()*70;
     const g=c.createRadialGradient(x,y,0,x,y,r);
@@ -2073,28 +394,24 @@ function makePaperTexture(){
     c.fillStyle=g;
     c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
   }
-  /* 2. 細顆粒 */
   const img=c.getImageData(0,0,S,S),d=img.data;
   for(let i=0;i<d.length;i+=4){
     const n=(Math.random()-.5)*14;
     d[i]+=n;d[i+1]+=n;d[i+2]+=n*.9;
   }
   c.putImageData(img,0,0);
-  /* 3. 長纖維（宣紙的皮料絲） */
   c.strokeStyle="rgba(130,115,90,.05)";
   for(let i=0;i<160;i++){
     const x=Math.random()*S,y=Math.random()*S;
     const len=8+Math.random()*36,ang=Math.random()*Math.PI;
     const bend=(Math.random()-.5)*10;
     c.lineWidth=.5+Math.random()*.7;
-    c.beginPath();
-    c.moveTo(x,y);
+    c.beginPath();c.moveTo(x,y);
     c.quadraticCurveTo(
-      x+Math.cos(ang)*len/2+bend, y+Math.sin(ang)*len/2+bend,
-      x+Math.cos(ang)*len, y+Math.sin(ang)*len);
+      x+Math.cos(ang)*len/2+bend,y+Math.sin(ang)*len/2+bend,
+      x+Math.cos(ang)*len,y+Math.sin(ang)*len);
     c.stroke();
   }
-  /* 4. 少量較明顯的深色纖維點 */
   c.fillStyle="rgba(100,88,66,.07)";
   for(let i=0;i<50;i++){
     const x=Math.random()*S,y=Math.random()*S;
@@ -2102,13 +419,7 @@ function makePaperTexture(){
   }
   return cv.toDataURL("image/png");
 }
-const grainURL=makePaperTexture();
-document.getElementById("grain").style.backgroundImage=`url(${grainURL})`;
-const grainImg=new Image();grainImg.src=grainURL;
-const heroImg=new Image();heroImg.src="assets/hero.jpg";
-
-buildLabels();
-resizeCanvases();
+document.getElementById("grain").style.backgroundImage=`url(${makePaperTexture()})`;
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f5eaf01ba707aa',t:'MTc5MDEyODQyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
